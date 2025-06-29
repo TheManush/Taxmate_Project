@@ -9,12 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_server/main.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:mockito/mockito.dart';
 
+// Create a fake/mock class
+class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    final mockStorage = MockSecureStorage();
 
+    await tester.pumpWidget(MyApp(storage: mockStorage));
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
     expect(find.text('1'), findsNothing);

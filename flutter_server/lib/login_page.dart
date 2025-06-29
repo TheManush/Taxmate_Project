@@ -3,16 +3,18 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'home_page.dart';
 import 'api_service.dart';
+import 'client_dashboard.dart';
+import 'service_provider_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggle;
   final String apiBaseUrl;
 
   const LoginPage({
-    Key? key,
+    super.key,
     required this.onToggle,
     required this.apiBaseUrl,
-  }) : super(key: key);
+  });
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -51,18 +53,9 @@ class _LoginPageState extends State<LoginPage> {
           if (responseData is Map<String, dynamic> &&
               responseData.containsKey('data')) {
             final data = responseData['data'];
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => WelcomePage(
-                  fullName: data['full_name'] ?? 'User',
-                  email: data['email'] ?? '',
-                  dob: data['dob'] ?? '',
-                  gender: data['gender'] ?? '',
-                  apiService: ApiService(widget.apiBaseUrl),
-                ),
-              ),
-            );
+
+            // Navigate based on user type
+            _navigateBasedOnUserType(data);
           } else {
             throw Exception('Invalid response format');
           }
@@ -93,6 +86,92 @@ class _LoginPageState extends State<LoginPage> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _navigateBasedOnUserType(Map<String, dynamic> userData) {
+    final ApiService apiService = ApiService(widget.apiBaseUrl);
+
+    // Extract user data with fallback values
+    final String fullName = userData['full_name'] ?? userData['fullName'] ?? 'User';
+    final String email = userData['email'] ?? '';
+    final String dob = userData['dob'] ?? '';
+    final String gender = userData['gender'] ?? '';
+    final String userType = userData['user_type'] ?? userData['userType'] ?? '';
+
+    // Check user type and navigate accordingly
+    if (userType.toLowerCase() == 'client') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ClientDashboard(
+            fullName: fullName,
+            email: email,
+            dob: dob,
+            gender: gender,
+            userType: userType,
+            clientType: userData['client_type'] ?? userData['clientType'], // Individual or Business
+            apiService: apiService,
+          ),
+        ),
+      );
+    } else if (userType.toLowerCase() == 'service provider' ||
+        userType.toLowerCase() == 'serviceprovider' ||
+        userType.toLowerCase() == 'service_provider') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ServiceProviderDashboard(
+            fullName: fullName,
+            email: email,
+            dob: dob,
+            gender: gender,
+            userType: userType,
+            serviceProviderType: userData['service_provider_type'] ??
+                userData['serviceProviderType'], // CA, Financial Planner, etc.
+            apiService: apiService,
+          ),
+        ),
+      );
+    } else {
+      // If no specific user type or unknown type, navigate to general welcome page
+      // or show error based on your preference
+      if (userType.isEmpty) {
+        // Fallback to original welcome page if no user type specified
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => WelcomePage(
+              fullName: fullName,
+              email: email,
+              dob: dob,
+              gender: gender,
+              apiService: apiService,
+            ),
+          ),
+        );
+      } else {
+        // Show error for unknown user type
+        _showErrorDialog('Unknown user type: $userType');
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -250,5 +329,12 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

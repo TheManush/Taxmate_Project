@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
-import 'api_service.dart';
 
 class LandingPage extends StatelessWidget {
   final String apiBaseUrl;
 
-  const LandingPage({Key? key, required this.apiBaseUrl}) : super(key: key);
+  const LandingPage({super.key, required this.apiBaseUrl});
 
   void _showAboutUs(BuildContext context) {
     showDialog(
