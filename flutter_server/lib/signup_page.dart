@@ -7,7 +7,7 @@ class SignUpPage extends StatefulWidget {
   final VoidCallback onToggleLogin;
   final String apiBaseUrl;
 
-  const SignUpPage({
+  const SignUpPage({super.key, 
     required this.onToggleLogin,
     required this.apiBaseUrl,
   });
@@ -134,12 +134,11 @@ class _SignUpPageState extends State<SignUpPage> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                 ),
                 isExpanded: true,
-                items: ['Client', 'Service Provider', 'Admin'].map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type),
-                  );
-                }).toList(),
+                items: const [
+                  DropdownMenuItem(value: 'client', child: Text('Client')),
+                  DropdownMenuItem(value: 'service_provider', child: Text('Service Provider')),
+                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                ],
                 onChanged: (value) {
                   setState(() {
                     _selectedUserType = value;
@@ -171,7 +170,7 @@ class _SignUpPageState extends State<SignUpPage> {
               if (_selectedUserType == 'Client' && _selectedClientType != null)
                 const SizedBox(height: 16),
 
-              if (_selectedUserType == 'Service Provider')
+              if (_selectedUserType == 'service_provider')
                 DropdownButtonFormField<String>(
                   value: _selectedServiceProviderType,
                   decoration: InputDecoration(
@@ -191,7 +190,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   validator: (value) => value == null ? "Please select type" : null,
                 ),
               
-              if (_selectedUserType == 'Service Provider' && _selectedServiceProviderType != null)
+              if (_selectedUserType == 'service_provider' && _selectedServiceProviderType != null)
                 const SizedBox(height: 16),
 
               // Common Fields
