@@ -115,7 +115,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     } else if (userType.toLowerCase() == 'service provider' ||
-        userType.toLowerCase() == 'serviceprovider' ||
         userType.toLowerCase() == 'service_provider') {
       Navigator.pushReplacement(
         context,
