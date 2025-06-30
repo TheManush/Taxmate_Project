@@ -266,7 +266,7 @@ class _SignUpPageState extends State<SignUpPage> {
               ],
 
               // Service Provider Fields
-              if (_selectedUserType == 'Service Provider') ...[
+              if (_selectedUserType == 'service_provider') ...[
                 _buildTextField(_experienceController, "Years of Experience", Icons.timeline,
                     keyboardType: TextInputType.number),
                 _buildTextField(

@@ -44,6 +44,8 @@ class UserOut(UserBase):
     user_type: str
     client_type: Optional[str] = None
     service_provider_type: Optional[str] = None
-
+    experience: Optional[str] = None
+    qualification: Optional[str] = None
+    
     class Config:
         from_attributes = True

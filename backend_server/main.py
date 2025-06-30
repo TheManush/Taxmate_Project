@@ -7,7 +7,10 @@ import models, schemas, crud
 from database import SessionLocal, engine
 import uvicorn
 from passlib.context import CryptContext
-
+from fastapi import APIRouter, Depends
+from typing import List
+from models import User  
+from schemas import UserOut
 # Create tables
 models.Base.metadata.create_all(bind=engine)
 
@@ -104,6 +107,16 @@ def login(request: schemas.UserLogin, db: Session = Depends(get_db)):
             "qualification": user.qualification
         }
     }
+
+@app.get("/chartered_accountants/", response_model=List[UserOut])
+def get_chartered_accountants(db: Session = Depends(get_db)):
+    ca_users = db.query(User).filter(
+        User.user_type == "service_provider",
+        User.service_provider_type.ilike("chartered accountant")
+    ).all()
+    return ca_users
+
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'tax_audit_page.dart';
+import 'bank_loan_page.dart';
+import 'financial_planning_page.dart';
 
 class ClientDashboard extends StatelessWidget {
   final String fullName;
@@ -221,28 +224,38 @@ class ClientDashboard extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.receipt_long),
-            title: const Text('My Requests'),
+            title: const Text('Tax Audit Service'),
             onTap: () {
               Navigator.pop(context);
-              // Navigate to service requests
+              Navigator.push(
+                context,
+                MaterialPageRoute( builder: (context) => TaxAuditPage(apiService: apiService),),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.history),
-            title: const Text('Service History'),
+            title: const Text('Financial Planning'),
             onTap: () {
               Navigator.pop(context);
-              // Navigate to service history
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FinancialPlanningPage()),
+              );
             },
           ),
           ListTile(
             leading: const Icon(Icons.payment),
-            title: const Text('Payments'),
+            title: const Text('Bank Loan Service'),
             onTap: () {
               Navigator.pop(context);
-              // Navigate to payments
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BankLoanPage()),
+              );
             },
           ),
+
           const Divider(),
           ListTile(
             leading: const Icon(Icons.settings),
