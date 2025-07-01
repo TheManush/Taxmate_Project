@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
-class CA_dashboard extends StatelessWidget {
+class CAdashboard extends StatefulWidget {
+  final int caId;
   final String fullName;
   final String email;
   final String dob;
@@ -12,6 +13,7 @@ class CA_dashboard extends StatelessWidget {
 
   const CAdashboard({
     super.key,
+    required this.caId,
     required this.fullName,
     required this.email,
     required this.dob,
@@ -19,13 +21,29 @@ class CA_dashboard extends StatelessWidget {
     required this.userType,
     this.serviceProviderType,
     required this.apiService,
-  });
 
+  });
+  @override
+  _CAdashboardState createState() => _CAdashboardState();
+}
+class _CAdashboardState extends State<CAdashboard> {
+  late Future<List<Map<String, dynamic>>> _pendingRequests;
+  bool _showOnlyPending = false;
+  @override
+  void initState() {
+    super.initState();
+    _fetchRequests();
+  }
+  void _fetchRequests() {
+    setState(() {
+      _pendingRequests = widget.apiService.fetchCARequests(widget.caId);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${serviceProviderType ?? 'Service Provider'} Dashboard'),
+        title: Text('${widget.serviceProviderType ?? 'Service Provider'} Dashboard'),
         backgroundColor: Colors.green[800],
         elevation: 0,
         actions: [
@@ -35,7 +53,7 @@ class CA_dashboard extends StatelessWidget {
           ),
         ],
       ),
-      drawer: _buildServiceProviderDrawer(context),
+      drawer: _buildCADrawer(context),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,56 +99,30 @@ class CA_dashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  const Text(
-                    'Quick Actions',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 15,
-                    mainAxisSpacing: 15,
-                    children: _buildQuickActions(),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    'Recent Client Requests',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildClientRequestCard(
-                    'John Doe',
-                    'Tax Filing Assistance',
-                    'Submitted 2 hours ago',
-                    'New',
-                    Colors.green,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Client Requests',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      Row(
+                        children: [
+                          const Text("Only Pending"),
+                          Switch(
+                            value: _showOnlyPending,
+                            onChanged: (val) {
+                              setState(() {
+                                _showOnlyPending = val;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
-                  _buildClientRequestCard(
-                    'ABC Corp',
-                    'Financial Planning',
-                    'Submitted yesterday',
-                    'In Progress',
-                    Colors.orange,
-                  ),
-                  const SizedBox(height: 10),
-                  _buildClientRequestCard(
-                    'Jane Smith',
-                    'Loan Application Review',
-                    'Submitted 3 days ago',
-                    'Completed',
-                    Colors.blue,
-                  ),
+                  _buildRequestList(), // Added request list widget
                 ],
               ),
             ),
@@ -139,118 +131,72 @@ class CA_dashboard extends StatelessWidget {
       ),
     );
   }
-  String _getFirstName() {
-    return fullName.split(' ').first;
-  }
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+
+  Widget _buildRequestList() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _pendingRequests,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Text('No pending requests.');
+        }
+
+        List<Map<String, dynamic>> requests = List.from(snapshot.data!);
+        if (_showOnlyPending) {
+          requests = requests.where((req) => req['status'] == 'pending').toList();
+        }
+        if (requests.isEmpty) {
+          return const Text('No matching requests to display.');
+        }
+        return Column(
+          children: requests.map((req) {
+            return Card(
+              child: ListTile(
+                title: Text('Client: ${req['client']['full_name']}'),
+                subtitle: Text('Status: ${req['status']}'),
+                trailing: req['status'] == 'pending'
+                    ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      onPressed: () async {
+                        await widget.apiService.updateRequestStatus(req['id'], 'approved');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Request accepted')),
+                        );
+                        _fetchRequests();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.red),
+                      onPressed: () async {
+                        await widget.apiService.updateRequestStatus(req['id'], 'rejected');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Request rejected')),
+                        );
+                        _fetchRequests();
+                      },
+                    ),
+                  ],
+                )
+                    : null,
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
-  List<Widget> _buildQuickActions() {
-    return [
-      _buildQuickActionCard(
-        icon: Icons.receipt_long,
-        label: 'Tax Returns',
-        color: Colors.blue,
-        onTap: () {},
-      ),
-      _buildQuickActionCard(
-        icon: Icons.account_balance,
-        label: 'Audit Services',
-        color: Colors.green,
-        onTap: () {},
-      ),
-      _buildQuickActionCard(
-        icon: Icons.calculate,
-        label: 'Bookkeeping',
-        color: Colors.orange,
-        onTap: () {},
-      ),
-      _buildQuickActionCard(
-        icon: Icons.business,
-        label: 'Compliance',
-        color: Colors.purple,
-        onTap: () {},
-      ),
-    ];
+
+  String _getFirstName() {
+    return widget.fullName.split(' ').first;
   }
-  Widget _buildClientRequestCard(
-      String clientName,
-      String serviceType,
-      String timeStamp,
-      String status,
-      Color statusColor,
-      ) {
-    return Card(
-      elevation: 1,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.1),
-          child: Text(
-            clientName[0].toUpperCase(),
-            style: TextStyle(
-              color: statusColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(clientName, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(serviceType),
-            Text(timeStamp, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          ],
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            status,
-            style: TextStyle(
-              color: statusColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        onTap: () {
-          // Future: Show request details
-        },
-      ),
-    );
-  }
-  Widget _buildServiceProviderDrawer(BuildContext context) {
+
+  Widget _buildCADrawer(BuildContext context) {
     return Drawer(
       child: ListView(
         children: [
@@ -260,8 +206,8 @@ class CA_dashboard extends StatelessWidget {
                 colors: [Colors.green[800]!, Colors.green[600]!],
               ),
             ),
-            accountName: Text(fullName),
-            accountEmail: Text(email),
+            accountName: Text(widget.fullName),
+            accountEmail: Text(widget.email),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               child: Text(
@@ -285,7 +231,4 @@ class CA_dashboard extends StatelessWidget {
       ),
     );
   }
-
-// Remaining methods unchanged (drawer, quick actions, dialogs, etc.)
-// ...
 }

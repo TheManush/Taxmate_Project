@@ -1,6 +1,9 @@
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from datetime import date
+from typing import Literal
+
+
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -46,6 +49,43 @@ class UserOut(UserBase):
     service_provider_type: Optional[str] = None
     experience: Optional[str] = None
     qualification: Optional[str] = None
-    
+
+    class Config:
+        from_attributes = True
+
+# For client to send request
+class ServiceRequestCreate(BaseModel):
+    client_id: int
+    ca_id: int
+
+
+# For returning request data
+class ServiceRequestOut(BaseModel):
+    id: int
+    client_id: int
+    ca_id: int
+    status: Literal['pending', 'approved', 'rejected']
+
+    class Config:
+        from_attributes = True 
+
+
+class UserShort(BaseModel):
+    id: int
+    full_name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+
+class ServiceRequestUpdate(BaseModel):
+    status: Literal["approved", "rejected"]
+
+class ServiceRequestDetailedOut(BaseModel):
+    id: int
+    status: str
+    client: UserShort
+    ca: UserShort
+
     class Config:
         from_attributes = True

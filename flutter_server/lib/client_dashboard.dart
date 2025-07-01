@@ -5,6 +5,7 @@ import 'bank_loan_page.dart';
 import 'financial_planning_page.dart';
 
 class ClientDashboard extends StatelessWidget {
+  final int clientId;
   final String fullName;
   final String email;
   final String dob;
@@ -15,6 +16,7 @@ class ClientDashboard extends StatelessWidget {
 
   const ClientDashboard({
     super.key,
+    required this.clientId,
     required this.fullName,
     required this.email,
     required this.dob,
@@ -229,7 +231,7 @@ class ClientDashboard extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute( builder: (context) => TaxAuditPage(apiService: apiService),),
+                MaterialPageRoute( builder: (context) => TaxAuditPage(apiService: apiService,clientId: clientId),),
               );
             },
           ),

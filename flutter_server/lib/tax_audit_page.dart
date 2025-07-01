@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
-import 'CAprofile.dart';
+import 'CA_profile_from_client.dart';
 
 class TaxAuditPage extends StatefulWidget {
   final ApiService apiService;
-
-  const TaxAuditPage({super.key, required this.apiService});
+  final int clientId;
+  const TaxAuditPage({super.key, required this.apiService,required this.clientId});
 
   @override
   State<TaxAuditPage> createState() => _TaxAuditPageState();
@@ -46,8 +46,10 @@ class _TaxAuditPageState extends State<TaxAuditPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => CAprofile(
+                        builder: (_) => CA_profile(
                           caData: ca,
+                          clientId: widget.clientId,
+                          apiService: widget.apiService,
                         ),
                       ),
                     );

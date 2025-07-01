@@ -135,7 +135,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 isExpanded: true,
                 items: const [
-                  DropdownMenuItem(value: 'client', child: Text('Client')),
+                  DropdownMenuItem(value: 'Client', child: Text('Client')),
                   DropdownMenuItem(value: 'service_provider', child: Text('Service Provider')),
                   DropdownMenuItem(value: 'admin', child: Text('Admin')),
                 ],

@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'home_page.dart';
 import 'api_service.dart';
 import 'client_dashboard.dart';
-import 'service_provider_dashboard.dart';
+import 'ca_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggle;
@@ -90,52 +90,52 @@ class _LoginPageState extends State<LoginPage> {
 
   void _navigateBasedOnUserType(Map<String, dynamic> userData) {
     final ApiService apiService = ApiService(widget.apiBaseUrl);
-
-    // Extract user data with fallback values
+    final int userId = userData['id'];
     final String fullName = userData['full_name'] ?? userData['fullName'] ?? 'User';
     final String email = userData['email'] ?? '';
     final String dob = userData['dob'] ?? '';
     final String gender = userData['gender'] ?? '';
     final String userType = userData['user_type'] ?? userData['userType'] ?? '';
+    final String? serviceProviderType = userData['service_provider_type'] ?? userData['serviceProviderType'];
 
-    // Check user type and navigate accordingly
     if (userType.toLowerCase() == 'client') {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => ClientDashboard(
+            clientId: userId,
             fullName: fullName,
             email: email,
             dob: dob,
             gender: gender,
             userType: userType,
-            clientType: userData['client_type'] ?? userData['clientType'], // Individual or Business
+            clientType: userData['client_type'] ?? userData['clientType'],
             apiService: apiService,
           ),
         ),
       );
-    } else if (userType.toLowerCase() == 'service provider' ||
-        userType.toLowerCase() == 'service_provider') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ServiceProviderDashboard(
-            fullName: fullName,
-            email: email,
-            dob: dob,
-            gender: gender,
-            userType: userType,
-            serviceProviderType: userData['service_provider_type'] ??
-                userData['serviceProviderType'], // CA, Financial Planner, etc.
-            apiService: apiService,
+    } else if (userType.toLowerCase() == 'service_provider') {
+      if (serviceProviderType?.toLowerCase() == 'chartered accountant') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CAdashboard(
+              caId: userId,
+              fullName: fullName,
+              email: email,
+              dob: dob,
+              gender: gender,
+              userType: userType,
+              serviceProviderType: serviceProviderType,
+              apiService: apiService,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        _showErrorDialog('Only Chartered Accountants are supported currently.');
+      }
     } else {
-      // If no specific user type or unknown type, navigate to general welcome page
-      // or show error based on your preference
       if (userType.isEmpty) {
-        // Fallback to original welcome page if no user type specified
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -149,7 +149,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       } else {
-        // Show error for unknown user type
         _showErrorDialog('Unknown user type: $userType');
       }
     }
