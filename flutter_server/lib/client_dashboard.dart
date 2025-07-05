@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
-import 'services/financial_service.dart';
-import 'pages/financial_summary_page.dart';
-import 'pages/ai_chatbot_page.dart';
+import 'financial_service.dart';
+import 'financial_summary_page.dart';
+import 'ai_chatbot_page.dart';
 import 'tax_audit_page.dart';
 import 'bank_loan_page.dart';
 import 'financial_planning_page.dart';
