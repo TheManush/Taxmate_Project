@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # Updated database URL for PostgreSQL
-DATABASE_URL = "postgresql://postgres:password@localhost:5432/flutter_auth_db"
+DATABASE_URL = "postgresql://postgres:1234@localhost:5432/flutter_auth_db"
 
 # Configure connection pool settings
 engine = create_engine(
