@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'services/financial_service.dart';
+import 'pages/financial_summary_page.dart';
+import 'pages/ai_chatbot_page.dart';
 import 'tax_audit_page.dart';
 import 'bank_loan_page.dart';
 import 'financial_planning_page.dart';
@@ -28,6 +31,8 @@ class ClientDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final financialService = FinancialService(apiService.baseUrl);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Client Dashboard'),
@@ -42,7 +47,7 @@ class ClientDashboard extends StatelessWidget {
           ),
         ],
       ),
-      drawer: _buildClientDrawer(context),
+      drawer: _buildClientDrawer(context, financialService),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,8 +77,8 @@ class ClientDashboard extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     clientType == 'Individual'
-                        ? "Manage your personal finances"
-                        : "Manage your business finances",
+                        ? "Manage your personal finances with AI assistance"
+                        : "Manage your business finances with AI assistance",
                     style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white70,
@@ -90,7 +95,7 @@ class ClientDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Services for You',
+                    'Financial Management',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -105,39 +110,68 @@ class ClientDashboard extends StatelessWidget {
                     mainAxisSpacing: 15,
                     children: [
                       _buildServiceCard(
+                        icon: Icons.account_balance_wallet,
+                        label: 'Financial Summary',
+                        description: 'View your complete financial overview',
+                        color: Colors.green,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FinancialSummaryPage(
+                                clientId: clientId,
+                                financialService: financialService,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildServiceCard(
+                        icon: Icons.smart_toy,
+                        label: 'AI Financial Advisor',
+                        description: 'Chat with your personal AI advisor',
+                        color: Colors.purple,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AIChatbotPage(
+                                clientId: clientId,
+                                financialService: financialService,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildServiceCard(
                         icon: Icons.calculate,
                         label: 'Tax Filing',
                         description: 'Get help with tax returns',
-                        color: Colors.green,
+                        color: Colors.orange,
                         onTap: () {
-                          // Navigate to tax filing service
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TaxAuditPage(
+                                apiService: apiService,
+                                clientId: clientId,
+                              ),
+                            ),
+                          );
                         },
                       ),
                       _buildServiceCard(
                         icon: Icons.trending_up,
                         label: 'Financial Planning',
                         description: 'Plan your financial future',
-                        color: Colors.purple,
+                        color: Colors.blue,
                         onTap: () {
-                          // Navigate to financial planning
-                        },
-                      ),
-                      _buildServiceCard(
-                        icon: Icons.account_balance,
-                        label: 'Bank Loans',
-                        description: 'Apply for loans easily',
-                        color: Colors.orange,
-                        onTap: () {
-                          // Navigate to bank loans
-                        },
-                      ),
-                      _buildServiceCard(
-                        icon: Icons.people,
-                        label: 'Find Experts',
-                        description: 'Connect with professionals',
-                        color: Colors.teal,
-                        onTap: () {
-                          // Navigate to find experts
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FinancialPlanningPage(),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -145,7 +179,61 @@ class ClientDashboard extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // Recent Requests/Activities
+                  const Text(
+                    'Quick Actions',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Quick action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          'Update Financial Data',
+                          Icons.edit,
+                          Colors.blue,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FinancialSummaryPage(
+                                  clientId: clientId,
+                                  financialService: financialService,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          'Ask AI Advisor',
+                          Icons.chat,
+                          Colors.purple,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AIChatbotPage(
+                                  clientId: clientId,
+                                  financialService: financialService,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Recent Activities placeholder
                   const Text(
                     'Recent Activities',
                     style: TextStyle(
@@ -155,16 +243,16 @@ class ClientDashboard extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _buildRecentActivityCard(
-                    'Tax Filing Request',
-                    'Submitted on March 15, 2024',
-                    'In Progress',
-                    Colors.orange,
+                    'Financial Data Updated',
+                    'Last updated today',
+                    'Complete',
+                    Colors.green,
                   ),
                   const SizedBox(height: 10),
                   _buildRecentActivityCard(
-                    'Financial Consultation',
-                    'Scheduled for March 20, 2024',
-                    'Upcoming',
+                    'AI Consultation',
+                    'Chat with your financial advisor',
+                    'Available',
                     Colors.blue,
                   ),
                 ],
@@ -176,7 +264,7 @@ class ClientDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildClientDrawer(BuildContext context) {
+  Widget _buildClientDrawer(BuildContext context, FinancialService financialService) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -217,6 +305,38 @@ class ClientDashboard extends StatelessWidget {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.account_balance_wallet),
+            title: const Text('Financial Summary'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FinancialSummaryPage(
+                    clientId: clientId,
+                    financialService: financialService,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy),
+            title: const Text('AI Financial Advisor'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AIChatbotPage(
+                    clientId: clientId,
+                    financialService: financialService,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.person),
             title: const Text('My Profile'),
             onTap: () {
@@ -231,18 +351,25 @@ class ClientDashboard extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute( builder: (context) => TaxAuditPage(apiService: apiService,clientId: clientId),),
+                MaterialPageRoute(
+                  builder: (context) => TaxAuditPage(
+                    apiService: apiService,
+                    clientId: clientId,
+                  ),
+                ),
               );
             },
           ),
           ListTile(
-            leading: const Icon(Icons.history),
+            leading: const Icon(Icons.trending_up),
             title: const Text('Financial Planning'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const FinancialPlanningPage()),
+                MaterialPageRoute(
+                  builder: (context) => const FinancialPlanningPage(),
+                ),
               );
             },
           ),
@@ -253,11 +380,12 @@ class ClientDashboard extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BankLoanPage()),
+                MaterialPageRoute(
+                  builder: (context) => const BankLoanPage(),
+                ),
               );
             },
           ),
-
           const Divider(),
           ListTile(
             leading: const Icon(Icons.settings),
@@ -297,23 +425,32 @@ class ClientDashboard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(15),
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 10),
+              Icon(icon, size: 48, color: color),
+              const SizedBox(height: 12),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 8),
               Text(
                 description,
                 textAlign: TextAlign.center,
@@ -329,9 +466,28 @@ class ClientDashboard extends StatelessWidget {
     );
   }
 
+  Widget _buildQuickActionButton(String label, IconData icon, Color color, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, color: Colors.white),
+      label: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecentActivityCard(String title, String subtitle, String status, Color statusColor) {
     return Card(
-      elevation: 1,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: statusColor.withOpacity(0.1),
