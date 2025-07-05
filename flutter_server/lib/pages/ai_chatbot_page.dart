@@ -22,12 +22,27 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _isSending = false;
+  bool _aiAvailable = true;
 
   @override
   void initState() {
     super.initState();
+    _checkAIAvailability();
     _loadChatHistory();
     _sendWelcomeMessage();
+  }
+
+  Future<void> _checkAIAvailability() async {
+    try {
+      final available = await widget.financialService.checkAIAvailability();
+      setState(() {
+        _aiAvailable = available;
+      });
+    } catch (e) {
+      setState(() {
+        _aiAvailable = false;
+      });
+    }
   }
 
   Future<void> _loadChatHistory() async {
@@ -43,7 +58,10 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading chat history: $e')),
+          SnackBar(
+            content: Text('Error loading chat history: $e'),
+            backgroundColor: Colors.orange,
+          ),
         );
       }
     } finally {
@@ -56,7 +74,15 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   Future<void> _sendWelcomeMessage() async {
     if (_messages.isEmpty) {
       await Future.delayed(const Duration(milliseconds: 500));
-      _addBotMessage("Hello! I'm your personal financial advisor AI. I can help you understand your financial situation, provide budgeting advice, and answer questions about your money. How can I assist you today?");
+      _addBotMessage(
+        "Hello! I'm your AI-powered financial advisor. I can help you with:\n\n"
+        "💰 Financial analysis and insights\n"
+        "📊 Personalized budgeting advice\n"
+        "💡 Investment recommendations\n"
+        "📈 Debt management strategies\n"
+        "🎯 Financial goal planning\n\n"
+        "What would you like to know about your finances today?"
+      );
     }
   }
 
@@ -75,6 +101,16 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
     if (message.isEmpty || _isSending) return;
+
+    if (!_aiAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('AI service is currently unavailable. Please try again later.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isSending = true;
@@ -107,7 +143,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
         _messages.add(ChatMessage(
           clientId: widget.clientId,
           message: '',
-          response: 'Sorry, I encountered an error. Please try again.',
+          response: 'I apologize, but I encountered an error processing your request. Please try again or contact support if the issue persists.\n\nError details: ${e.toString()}',
           timestamp: DateTime.now(),
         ));
       });
@@ -134,11 +170,28 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.smart_toy, color: Colors.white),
-            SizedBox(width: 8),
-            Text('AI Financial Advisor'),
+            Icon(
+              Icons.smart_toy,
+              color: _aiAvailable ? Colors.white : Colors.grey,
+            ),
+            const SizedBox(width: 8),
+            const Text('AI Financial Advisor'),
+            if (!_aiAvailable) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'OFFLINE',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ],
         ),
         backgroundColor: Colors.blue[800],
@@ -146,17 +199,73 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadChatHistory,
+            onPressed: () {
+              _checkAIAvailability();
+              _loadChatHistory();
+            },
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'clear':
+                  _showClearChatDialog();
+                  break;
+                case 'help':
+                  _showHelpDialog();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'clear',
+                child: Row(
+                  children: [
+                    Icon(Icons.clear_all),
+                    SizedBox(width: 8),
+                    Text('Clear Chat'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'help',
+                child: Row(
+                  children: [
+                    Icon(Icons.help),
+                    SizedBox(width: 8),
+                    Text('Help'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
       body: Column(
         children: [
+          if (!_aiAvailable)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              color: Colors.orange[100],
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange[800]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI service is currently offline. Some features may be limited.',
+                      style: TextStyle(color: Colors.orange[800]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _buildChatList(),
           ),
+          _buildQuickActions(),
           _buildMessageInput(),
         ],
       ),
@@ -165,10 +274,27 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
 
   Widget _buildChatList() {
     if (_messages.isEmpty) {
-      return const Center(
-        child: Text(
-          'Start a conversation with your AI financial advisor!',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.smart_toy,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Start a conversation with your\nAI financial advisor!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildQuickStartButtons(),
+          ],
         ),
       );
     }
@@ -187,6 +313,32 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
           message.timestamp,
         );
       },
+    );
+  }
+
+  Widget _buildQuickStartButtons() {
+    final quickStarters = [
+      'Show my financial summary',
+      'How can I save more money?',
+      'Investment advice',
+    ];
+
+    return Column(
+      children: quickStarters.map((text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: ElevatedButton(
+          onPressed: () {
+            _messageController.text = text;
+            _sendMessage();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue[50],
+            foregroundColor: Colors.blue[700],
+            elevation: 0,
+          ),
+          child: Text(text),
+        ),
+      )).toList(),
     );
   }
 
@@ -218,6 +370,13 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
               decoration: BoxDecoration(
                 color: isUser ? Colors.blue[600] : Colors.grey[200],
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,6 +386,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
                     style: TextStyle(
                       color: isUser ? Colors.white : Colors.black87,
                       fontSize: 16,
+                      height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -258,6 +418,43 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     );
   }
 
+  Widget _buildQuickActions() {
+    if (_messages.isEmpty) return const SizedBox.shrink();
+
+    final quickActions = [
+      'Financial summary',
+      'Savings tips',
+      'Investment advice',
+      'Debt help',
+      'Budget analysis',
+    ];
+
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: quickActions.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ActionChip(
+              label: Text(quickActions[index]),
+              onPressed: () {
+                _messageController.text = quickActions[index];
+                _sendMessage();
+              },
+              backgroundColor: Colors.blue[50],
+              labelStyle: TextStyle(color: Colors.blue[700]),
+              side: BorderSide(color: Colors.blue[200]!),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildMessageInput() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -279,6 +476,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
               decoration: BoxDecoration(
                 color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: Colors.grey[300]!),
               ),
               child: TextField(
                 controller: _messageController,
@@ -290,13 +488,14 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
                 maxLines: null,
                 textCapitalization: TextCapitalization.sentences,
                 onSubmitted: (_) => _sendMessage(),
+                enabled: _aiAvailable,
               ),
             ),
           ),
           const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              color: Colors.blue[600],
+              color: _aiAvailable ? Colors.blue[600] : Colors.grey[400],
               shape: BoxShape.circle,
             ),
             child: IconButton(
@@ -310,7 +509,7 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
                       ),
                     )
                   : const Icon(Icons.send, color: Colors.white),
-              onPressed: _isSending ? null : _sendMessage,
+              onPressed: (_isSending || !_aiAvailable) ? null : _sendMessage,
             ),
           ),
         ],
@@ -318,36 +517,72 @@ class _AIChatbotPageState extends State<AIChatbotPage> {
     );
   }
 
-  Widget _buildQuickActions() {
-    final quickActions = [
-      'Show my financial summary',
-      'How can I save more money?',
-      'What should I invest in?',
-      'Help me reduce my debt',
-      'Budget advice',
-    ];
+  void _showClearChatDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Chat History'),
+        content: const Text('Are you sure you want to clear all chat messages? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _messages.clear();
+              });
+              Navigator.pop(context);
+              _sendWelcomeMessage();
+            },
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return Container(
-      height: 50,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: quickActions.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ActionChip(
-              label: Text(quickActions[index]),
-              onPressed: () {
-                _messageController.text = quickActions[index];
-                _sendMessage();
-              },
-              backgroundColor: Colors.blue[50],
-              labelStyle: TextStyle(color: Colors.blue[700]),
-            ),
-          );
-        },
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('AI Financial Advisor Help'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Your AI advisor can help with:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              Text('• Financial analysis and insights'),
+              Text('• Personalized budgeting advice'),
+              Text('• Investment recommendations'),
+              Text('• Debt management strategies'),
+              Text('• Savings optimization'),
+              Text('• Financial goal planning'),
+              SizedBox(height: 16),
+              Text(
+                'Tips for better responses:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text('• Be specific about your questions'),
+              Text('• Keep your financial data updated'),
+              Text('• Ask follow-up questions for clarity'),
+              Text('• Use the quick action buttons'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
       ),
     );
   }

@@ -15,9 +15,16 @@ from schemas import UserOut
 from models import ServiceRequest, User
 from schemas import ServiceRequestCreate, ServiceRequestOut
 from fastapi import status
+
+# Import financial modules
+from financial_models import FinancialData, ChatMessage
+from financial_schemas import FinancialDataCreate, FinancialDataOut, FinancialSummary, ChatMessageCreate, ChatMessageOut
+from financial_crud import create_or_update_financial_data, get_financial_data, calculate_financial_summary, create_chat_message, get_chat_history
+from ai_chatbot import financial_chatbot
+import asyncio
+
 # Create tables
 models.Base.metadata.create_all(bind=engine)
-
 
 app = FastAPI()
 
@@ -154,7 +161,6 @@ def create_service_request(request: ServiceRequestCreate, db: Session = Depends(
     db.refresh(new_request)
     return new_request
 
-
 @app.patch("/requests/{request_id}", response_model=ServiceRequestOut)
 def update_request_status(request_id: int, update: ServiceRequestUpdate, db: Session = Depends(get_db)):
     service_request = db.query(ServiceRequest).filter_by(id=request_id).first()
@@ -165,7 +171,6 @@ def update_request_status(request_id: int, update: ServiceRequestUpdate, db: Ses
     db.commit()
     db.refresh(service_request)
     return service_request
-
 
 @app.get("/ca/{ca_id}/requests", response_model=List[ServiceRequestDetailedOut])
 def get_requests_for_ca(ca_id: int, db: Session = Depends(get_db)):
@@ -183,6 +188,69 @@ def get_requests_for_client(client_id: int, db: Session = Depends(get_db)):
     ).all()
     return requests
 
+# Financial Data Endpoints
+@app.post("/financial-data/{client_id}", response_model=FinancialDataOut)
+def create_update_financial_data(client_id: int, financial_data: FinancialDataCreate, db: Session = Depends(get_db)):
+    # Verify client exists
+    client = db.query(User).filter(User.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    result = create_or_update_financial_data(db, client_id, financial_data)
+    return result
+
+@app.get("/financial-data/{client_id}", response_model=FinancialDataOut)
+def get_client_financial_data(client_id: int, db: Session = Depends(get_db)):
+    financial_data = get_financial_data(db, client_id)
+    if not financial_data:
+        raise HTTPException(status_code=404, detail="Financial data not found")
+    return financial_data
+
+@app.get("/financial-summary/{client_id}", response_model=FinancialSummary)
+def get_client_financial_summary(client_id: int, db: Session = Depends(get_db)):
+    financial_data = get_financial_data(db, client_id)
+    if not financial_data:
+        raise HTTPException(status_code=404, detail="Financial data not found")
+    
+    summary = calculate_financial_summary(financial_data)
+    return FinancialSummary(**summary)
+
+# AI Chatbot Endpoints
+@app.post("/chat/{client_id}")
+async def chat_with_ai(client_id: int, message: ChatMessageCreate, db: Session = Depends(get_db)):
+    # Verify client exists
+    client = db.query(User).filter(User.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Get client's financial data for context
+    financial_data = get_financial_data(db, client_id)
+    
+    try:
+        # Generate AI response using OpenAI
+        ai_response = await financial_chatbot.generate_response(message.message, financial_data)
+        
+        # Save the conversation to database
+        chat_message = create_chat_message(db, client_id, message.message, ai_response)
+        
+        return {"response": ai_response}
+    
+    except Exception as e:
+        print(f"Error in chat endpoint: {e}")
+        # Fallback response
+        fallback_response = "I'm sorry, I'm experiencing technical difficulties. Please try again later or contact support if the issue persists."
+        chat_message = create_chat_message(db, client_id, message.message, fallback_response)
+        return {"response": fallback_response}
+
+@app.get("/chat-history/{client_id}", response_model=List[ChatMessageOut])
+def get_client_chat_history(client_id: int, db: Session = Depends(get_db)):
+    # Verify client exists
+    client = db.query(User).filter(User.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    chat_history = get_chat_history(db, client_id)
+    return chat_history
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
