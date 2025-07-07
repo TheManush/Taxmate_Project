@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:http_parser/http_parser.dart';
 class ApiService {
   final String baseUrl;
 
@@ -105,4 +105,101 @@ class ApiService {
       throw Exception('Failed to fetch client requests');
     }
   }
+  Future<List<Map<String, dynamic>>> fetchApprovedClients(int caId) async {
+    final response = await http.get(Uri.parse('http://10.0.2.2:8000/ca/$caId/approved_clients'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load approved clients');
+    }
+  }
+
+  Future<String> getDownloadUrl(int clientId, int caId, String docType) async {
+    final encodedDocType = Uri.encodeComponent(docType);
+    final response = await http.get(Uri.parse(
+      'http://10.0.2.2:8000/download-url/$clientId/$caId?doc_type=$encodedDocType',
+    ));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['url'];
+    } else {
+      throw Exception('Failed to get download URL: ${response.statusCode}');
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadFile({
+    required int userId,
+    required int caId,
+    required List<int> fileBytes,
+    required String fileName,
+    required String contentType,
+    required String docType,
+    String? token,
+  }) async {
+    try {
+      final url = Uri.parse('$baseUrl/upload/$userId/$caId?doc_type=${Uri.encodeComponent(docType)}');
+
+      var request = http.MultipartRequest('POST', url);
+
+      // Add the file
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        fileBytes,
+        filename: fileName,
+        contentType: MediaType.parse(contentType),
+      ));
+
+      // Add headers if token is provided
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Upload failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Upload error: ${e.toString()}');
+    }
+  }
+
+  // Helper method to get content type from file extension
+  String getContentType(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+  Future<bool> checkAuditReportExists(int clientId, int caId) async {
+    final url = Uri.parse('http://10.0.2.2:8000/check-file-exists/$clientId/$caId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['exists'] ?? false;
+    } else {
+      return false;
+    }
+  }
+
+
 }
+

@@ -10,17 +10,19 @@ from passlib.context import CryptContext
 from fastapi import APIRouter, Depends
 from typing import List
 from models import User  
-from schemas import UserOut
-
-from models import ServiceRequest, User
+from schemas import UserOut, UserShort
+from models import User, ServiceRequest
 from schemas import ServiceRequestCreate, ServiceRequestOut
 from fastapi import status
+from file_upload import router as upload_router
+
 # Create tables
 models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
 
+app.include_router(upload_router)
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -182,6 +184,17 @@ def get_requests_for_client(client_id: int, db: Session = Depends(get_db)):
         selectinload(ServiceRequest.client)
     ).all()
     return requests
+
+@app.get("/ca/{ca_id}/approved_clients", response_model=List[UserShort])
+def get_approved_clients_for_ca(ca_id: int, db: Session = Depends(get_db)):
+    approved_requests = db.query(ServiceRequest).filter_by(
+        ca_id=ca_id, status="approved"
+    ).all()
+    
+    client_ids = [req.client_id for req in approved_requests]
+
+    clients = db.query(User).filter(User.id.in_(client_ids)).all()
+    return clients
 
 
 if __name__ == "__main__":

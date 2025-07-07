@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from datetime import date
 from typing import Literal
-
+from datetime import datetime
 
 
 class UserBase(BaseModel):
@@ -89,3 +89,5 @@ class ServiceRequestDetailedOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+

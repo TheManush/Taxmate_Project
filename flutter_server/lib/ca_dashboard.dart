@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
-
+import 'client_page_from_CA.dart';
 class CAdashboard extends StatefulWidget {
   final int caId;
   final String fullName;
@@ -29,21 +29,25 @@ class CAdashboard extends StatefulWidget {
 class _CAdashboardState extends State<CAdashboard> {
   late Future<List<Map<String, dynamic>>> _pendingRequests;
   bool _showOnlyPending = false;
+
   @override
   void initState() {
     super.initState();
     _fetchRequests();
   }
+
   void _fetchRequests() {
     setState(() {
       _pendingRequests = widget.apiService.fetchCARequests(widget.caId);
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.serviceProviderType ?? 'Service Provider'} Dashboard'),
+        title: Text(
+            '${widget.serviceProviderType ?? 'Service Provider'} Dashboard'),
         backgroundColor: Colors.green[800],
         elevation: 0,
         actions: [
@@ -104,7 +108,10 @@ class _CAdashboardState extends State<CAdashboard> {
                     children: [
                       Text(
                         'Client Requests',
-                        style: Theme.of(context).textTheme.headlineSmall,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineSmall,
                       ),
                       Row(
                         children: [
@@ -146,7 +153,8 @@ class _CAdashboardState extends State<CAdashboard> {
 
         List<Map<String, dynamic>> requests = List.from(snapshot.data!);
         if (_showOnlyPending) {
-          requests = requests.where((req) => req['status'] == 'pending').toList();
+          requests =
+              requests.where((req) => req['status'] == 'pending').toList();
         }
         if (requests.isEmpty) {
           return const Text('No matching requests to display.');
@@ -164,7 +172,8 @@ class _CAdashboardState extends State<CAdashboard> {
                     IconButton(
                       icon: const Icon(Icons.check, color: Colors.green),
                       onPressed: () async {
-                        await widget.apiService.updateRequestStatus(req['id'], 'approved');
+                        await widget.apiService.updateRequestStatus(
+                            req['id'], 'approved');
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Request accepted')),
                         );
@@ -174,7 +183,8 @@ class _CAdashboardState extends State<CAdashboard> {
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.red),
                       onPressed: () async {
-                        await widget.apiService.updateRequestStatus(req['id'], 'rejected');
+                        await widget.apiService.updateRequestStatus(
+                            req['id'], 'rejected');
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Request rejected')),
                         );
@@ -193,7 +203,9 @@ class _CAdashboardState extends State<CAdashboard> {
   }
 
   String _getFirstName() {
-    return widget.fullName.split(' ').first;
+    return widget.fullName
+        .split(' ')
+        .first;
   }
 
   Widget _buildCADrawer(BuildContext context) {
@@ -219,12 +231,42 @@ class _CAdashboardState extends State<CAdashboard> {
               ),
             ),
           ),
+
+          // 👉 Pending Requests (current page)
+          ListTile(
+            leading: const Icon(Icons.pending_actions),
+            title: const Text("Pending Requests"),
+            selected: true, // Highlights the current page
+            onTap: () {
+              Navigator.pop(context); // Just close drawer
+            },
+          ),
+
+          // 👉 Clients (navigates to new page)
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: const Text("Clients"),
+            onTap: () {
+              Navigator.of(context).pop(); // Close the drawer
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ClientsPage(
+                    caId: widget.caId,
+                    apiService: widget.apiService,
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // 👉 Logout
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text("Logout"),
             onTap: () {
               Navigator.of(context).pop();
-              Navigator.of(context).pop(); // Return to login
+              Navigator.of(context).pop(); // Go back to login
             },
           ),
         ],

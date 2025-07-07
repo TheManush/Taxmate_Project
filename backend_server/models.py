@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Date,ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Date,ForeignKey,DateTime, Enum
 from database import Base
+from datetime import datetime
 from sqlalchemy.orm import relationship
 
 class User(Base):
@@ -43,3 +44,5 @@ class ServiceRequest(Base):
 
     client = relationship("User", back_populates="service_requests_sent", foreign_keys=[client_id])
     ca = relationship("User", back_populates="service_requests_received", foreign_keys=[ca_id])
+
+
