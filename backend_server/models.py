@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Date,ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Date,ForeignKey,DateTime, Enum
 from database import Base
+from datetime import datetime
 from sqlalchemy.orm import relationship
 
 class User(Base):
@@ -32,14 +33,19 @@ class User(Base):
     #relationships
     service_requests_sent = relationship("ServiceRequest", back_populates="client", foreign_keys='ServiceRequest.client_id')
     service_requests_received = relationship("ServiceRequest", back_populates="ca", foreign_keys='ServiceRequest.ca_id')
+    blo_requests_received = relationship("ServiceRequest", back_populates="blo", foreign_keys='ServiceRequest.blo_id')
 
 class ServiceRequest(Base):
     __tablename__ = "service_requests"
 
     id = Column(Integer, primary_key=True, index=True)
     client_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    ca_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    ca_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    blo_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     status = Column(String(20), default='pending')  # 'pending', 'approved', 'rejected'
 
     client = relationship("User", back_populates="service_requests_sent", foreign_keys=[client_id])
     ca = relationship("User", back_populates="service_requests_received", foreign_keys=[ca_id])
+    blo = relationship("User", back_populates="blo_requests_received", foreign_keys=[blo_id])
+
+

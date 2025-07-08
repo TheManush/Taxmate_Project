@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'landing_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +15,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final FlutterSecureStorage storage;
-  final String apiBaseUrl = 'http://<YOUR_LOCAL_IP>:8000'; // For Android emulator
+  final String apiBaseUrl = 'http://192.168.49.106:8000'; // For Android emulator
 
   const MyApp({super.key, required this.storage});
 

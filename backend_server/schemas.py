@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
 from datetime import date
 from typing import Literal
-
+from datetime import datetime
 
 
 class UserBase(BaseModel):
@@ -56,14 +56,16 @@ class UserOut(UserBase):
 # For client to send request
 class ServiceRequestCreate(BaseModel):
     client_id: int
-    ca_id: int
+    ca_id: Optional[int] = None
+    blo_id: Optional[int] = None
 
 
 # For returning request data
 class ServiceRequestOut(BaseModel):
     id: int
     client_id: int
-    ca_id: int
+    ca_id: Optional[int] = None
+    blo_id: Optional[int] = None
     status: Literal['pending', 'approved', 'rejected']
 
     class Config:
@@ -85,7 +87,10 @@ class ServiceRequestDetailedOut(BaseModel):
     id: int
     status: str
     client: UserShort
-    ca: UserShort
+    ca: Optional[UserShort] = None
+    blo: Optional[UserShort] = None
 
     class Config:
         from_attributes = True
+
+

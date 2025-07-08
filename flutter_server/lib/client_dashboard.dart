@@ -253,7 +253,7 @@ class ClientDashboard extends StatelessWidget {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const BankLoanPage()),
+                MaterialPageRoute(builder: (context) => BankLoanServicePage(apiService: apiService, clientId: clientId)),
               );
             },
           ),

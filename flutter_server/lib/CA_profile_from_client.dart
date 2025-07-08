@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
-import 'blank_page.dart';
+import 'file_upload.dart' ;
 
 class CA_profile extends StatelessWidget {
   final Map<String, dynamic> caData;
@@ -31,7 +31,7 @@ class CA_profile extends StatelessWidget {
             Text("Experience: ${caData['experience'] ?? 'N/A'}"),
             const SizedBox(height: 20),
             FutureBuilder<Map<String, dynamic>?>(
-              future: apiService.checkExistingRequest(clientId, caData['id']),
+              future: apiService.checkExistingRequest(clientId, caData['id'], null),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const CircularProgressIndicator();
@@ -75,7 +75,11 @@ class CA_profile extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const BlankPageForNow(),
+                              builder: (_) => FileUploadPage(
+                                clientId: clientId,
+                                caId: caData['id'],
+                                apiService: apiService,
+                              ),
                           ),
                         );
                       },

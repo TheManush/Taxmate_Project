@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
-import 'client_page_from_CA.dart';
-class CAdashboard extends StatefulWidget {
-  final int caId;
+import 'client_page_from_BLO.dart'; // You should create this page similar to client_page_from_CA
+
+class BankLoanOfficerDashboard extends StatefulWidget {
+  final int officerId;
   final String fullName;
   final String email;
   final String dob;
@@ -11,9 +12,9 @@ class CAdashboard extends StatefulWidget {
   final String? serviceProviderType;
   final ApiService apiService;
 
-  const CAdashboard({
+  const BankLoanOfficerDashboard({
     super.key,
-    required this.caId,
+    required this.officerId,
     required this.fullName,
     required this.email,
     required this.dob,
@@ -21,12 +22,13 @@ class CAdashboard extends StatefulWidget {
     required this.userType,
     this.serviceProviderType,
     required this.apiService,
-
   });
+
   @override
-  _CAdashboardState createState() => _CAdashboardState();
+  _BankLoanOfficerDashboardState createState() => _BankLoanOfficerDashboardState();
 }
-class _CAdashboardState extends State<CAdashboard> {
+
+class _BankLoanOfficerDashboardState extends State<BankLoanOfficerDashboard> {
   late Future<List<Map<String, dynamic>>> _pendingRequests;
   bool _showOnlyPending = false;
 
@@ -38,7 +40,7 @@ class _CAdashboardState extends State<CAdashboard> {
 
   void _fetchRequests() {
     setState(() {
-      _pendingRequests = widget.apiService.fetchCARequests(widget.caId);
+      _pendingRequests = widget.apiService.fetchBankLoanOfficerRequests(widget.officerId);
     });
   }
 
@@ -46,9 +48,8 @@ class _CAdashboardState extends State<CAdashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            '${widget.serviceProviderType ?? 'Service Provider'} Dashboard'),
-        backgroundColor: Colors.green[800],
+        title: Text('${widget.serviceProviderType ?? 'Bank Loan Officer'} Dashboard'),
+        backgroundColor: Colors.blueGrey[900],
         elevation: 0,
         actions: [
           IconButton(
@@ -57,18 +58,17 @@ class _CAdashboardState extends State<CAdashboard> {
           ),
         ],
       ),
-      drawer: _buildCADrawer(context),
+      drawer: _buildDrawer(context),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green[800]!, Colors.green[600]!],
+                  colors: [Colors.blueGrey[900]!, Colors.blueGrey[700]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -85,18 +85,14 @@ class _CAdashboardState extends State<CAdashboard> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Text(
+                  const Text(
                     "Manage your clients and services",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
                   ),
                 ],
               ),
             ),
 
-            // Main Content
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
@@ -108,10 +104,7 @@ class _CAdashboardState extends State<CAdashboard> {
                     children: [
                       Text(
                         'Client Requests',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headlineSmall,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       Row(
                         children: [
@@ -129,7 +122,7 @@ class _CAdashboardState extends State<CAdashboard> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  _buildRequestList(), // Added request list widget
+                  _buildRequestList(),
                 ],
               ),
             ),
@@ -153,12 +146,12 @@ class _CAdashboardState extends State<CAdashboard> {
 
         List<Map<String, dynamic>> requests = List.from(snapshot.data!);
         if (_showOnlyPending) {
-          requests =
-              requests.where((req) => req['status'] == 'pending').toList();
+          requests = requests.where((req) => req['status'] == 'pending').toList();
         }
         if (requests.isEmpty) {
           return const Text('No matching requests to display.');
         }
+
         return Column(
           children: requests.map((req) {
             return Card(
@@ -167,32 +160,32 @@ class _CAdashboardState extends State<CAdashboard> {
                 subtitle: Text('Status: ${req['status']}'),
                 trailing: req['status'] == 'pending'
                     ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.check, color: Colors.green),
-                      onPressed: () async {
-                        await widget.apiService.updateRequestStatus(
-                            req['id'], 'approved');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Request accepted')),
-                        );
-                        _fetchRequests();
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.red),
-                      onPressed: () async {
-                        await widget.apiService.updateRequestStatus(
-                            req['id'], 'rejected');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Request rejected')),
-                        );
-                        _fetchRequests();
-                      },
-                    ),
-                  ],
-                )
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.check, color: Colors.green),
+                            onPressed: () async {
+                              await widget.apiService.updateBankLoanRequestStatus(
+                                  req['id'], 'approved');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Request accepted')),
+                              );
+                              _fetchRequests();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () async {
+                              await widget.apiService.updateBankLoanRequestStatus(
+                                  req['id'], 'rejected');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Request rejected')),
+                              );
+                              _fetchRequests();
+                            },
+                          ),
+                        ],
+                      )
                     : null,
               ),
             );
@@ -203,19 +196,17 @@ class _CAdashboardState extends State<CAdashboard> {
   }
 
   String _getFirstName() {
-    return widget.fullName
-        .split(' ')
-        .first;
+    return widget.fullName.split(' ').first;
   }
 
-  Widget _buildCADrawer(BuildContext context) {
+  Widget _buildDrawer(BuildContext context) {
     return Drawer(
       child: ListView(
         children: [
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.green[800]!, Colors.green[600]!],
+                colors: [Colors.blueGrey[900]!, Colors.blueGrey[700]!],
               ),
             ),
             accountName: Text(widget.fullName),
@@ -224,49 +215,38 @@ class _CAdashboardState extends State<CAdashboard> {
               backgroundColor: Colors.white,
               child: Text(
                 _getFirstName()[0],
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.green[800],
-                ),
+                style: TextStyle(fontSize: 24, color: Colors.blueGrey[900]),
               ),
             ),
           ),
-
-          // 👉 Pending Requests (current page)
           ListTile(
             leading: const Icon(Icons.pending_actions),
             title: const Text("Pending Requests"),
-            selected: true, // Highlights the current page
-            onTap: () {
-              Navigator.pop(context); // Just close drawer
-            },
+            selected: true,
+            onTap: () => Navigator.pop(context),
           ),
-
-          // 👉 Clients (navigates to new page)
           ListTile(
             leading: const Icon(Icons.people),
             title: const Text("Clients"),
             onTap: () {
-              Navigator.of(context).pop(); // Close the drawer
+              Navigator.of(context).pop();
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => ClientsPage(
-                    caId: widget.caId,
+                  builder: (context) => ClientsPageFromBLO(
+                    officerId: widget.officerId,
                     apiService: widget.apiService,
                   ),
                 ),
               );
             },
           ),
-
-          // 👉 Logout
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout", style: TextStyle(color: Colors.red)),
             onTap: () {
               Navigator.of(context).pop();
-              Navigator.of(context).pop(); // Go back to login
+              Navigator.of(context).pop();
             },
           ),
         ],

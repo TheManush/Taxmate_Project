@@ -5,6 +5,7 @@ import 'home_page.dart';
 import 'api_service.dart';
 import 'client_dashboard.dart';
 import 'ca_dashboard.dart';
+import 'blo_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggle;
@@ -115,8 +116,11 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     } else if (userType.toLowerCase() == 'service_provider') {
-      if (serviceProviderType?.toLowerCase() == 'chartered accountant') {
-        Navigator.pushReplacement(
+        // Normalize the service provider type for comparison
+        final normalizedType = serviceProviderType?.toLowerCase().replaceAll(' ', '_');
+        
+        if (normalizedType == 'chartered_accountant') {
+          Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => CAdashboard(
@@ -131,27 +135,43 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         );
-      } else {
-        _showErrorDialog('Only Chartered Accountants are supported currently.');
-      }
-    } else {
-      if (userType.isEmpty) {
+      } else if (normalizedType == 'bank_loan_officer') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => WelcomePage(
+            builder: (context) => BankLoanOfficerDashboard(
+              officerId: userId,
               fullName: fullName,
               email: email,
               dob: dob,
               gender: gender,
+              userType: userType,
+              serviceProviderType: serviceProviderType,
               apiService: apiService,
             ),
           ),
         );
       } else {
-        _showErrorDialog('Unknown user type: $userType');
+        _showErrorDialog('Unsupported service provider type: $serviceProviderType');
       }
-    }
+    } else {
+        if (userType.isEmpty) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => WelcomePage(
+                fullName: fullName,
+                email: email,
+                dob: dob,
+                gender: gender,
+                apiService: apiService,
+              ),
+            ),
+          );
+        } else {
+          _showErrorDialog('Unknown user type: $userType');
+        }
+  }
   }
 
   void _showErrorDialog(String message) {

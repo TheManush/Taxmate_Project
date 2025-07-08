@@ -10,17 +10,19 @@ from passlib.context import CryptContext
 from fastapi import APIRouter, Depends
 from typing import List
 from models import User  
-from schemas import UserOut
-
-from models import ServiceRequest, User
+from schemas import UserOut, UserShort
+from models import User, ServiceRequest
 from schemas import ServiceRequestCreate, ServiceRequestOut
 from fastapi import status
+from file_upload import router as upload_router
+
 # Create tables
 models.Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
 
+app.include_router(upload_router)
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -121,38 +123,96 @@ def get_chartered_accountants(db: Session = Depends(get_db)):
     ).all()
     return ca_users
 
+@app.get("/bank_loan_officers/", response_model=List[UserOut])
+def get_bank_loan_officers(db: Session = Depends(get_db)):
+    blo_users = db.query(User).filter(
+        User.user_type == "service_provider",
+        User.service_provider_type.ilike("bank loan officer")
+    ).all()
+    return blo_users
+
 from sqlalchemy.orm import selectinload
 from schemas import ServiceRequestUpdate, ServiceRequestDetailedOut
 
 @app.post("/requests/", response_model=ServiceRequestOut, status_code=status.HTTP_201_CREATED)
 def create_service_request(request: ServiceRequestCreate, db: Session = Depends(get_db)):
-    # Check if CA exists and is of correct type
-    ca_user = db.query(User).filter(
-        User.id == request.ca_id,
-        User.user_type == "service_provider",
-        User.service_provider_type.ilike("chartered accountant")
-    ).first()
-    if not ca_user:
-        raise HTTPException(status_code=404, detail="Chartered Accountant not found")
+    try:
+        print(f"DEBUG: Creating service request with data: {request}")
+        print(f"DEBUG: ca_id={request.ca_id}, blo_id={request.blo_id}, client_id={request.client_id}")
+        
+        # Validate that either ca_id or blo_id is provided, but not both
+        if not request.ca_id and not request.blo_id:
+            print("DEBUG: Neither CA ID nor BLO ID provided")
+            raise HTTPException(status_code=400, detail="Either CA ID or BLO ID must be provided")
+        
+        if request.ca_id and request.blo_id:
+            print("DEBUG: Both CA ID and BLO ID provided")
+            raise HTTPException(status_code=400, detail="Cannot request both CA and BLO services simultaneously")
+    
+        # Handle CA requests (original functionality)
+        if request.ca_id:
+            print(f"DEBUG: Processing CA request for CA ID: {request.ca_id}")
+            ca_user = db.query(User).filter(
+                User.id == request.ca_id,
+                User.user_type == "service_provider",
+                User.service_provider_type.ilike("chartered accountant")
+            ).first()
+            if not ca_user:
+                print(f"DEBUG: CA user not found for ID: {request.ca_id}")
+                raise HTTPException(status_code=404, detail="Chartered Accountant not found")
+            
+            # Check for existing CA request
+            existing = db.query(ServiceRequest).filter_by(
+                client_id=request.client_id,
+                ca_id=request.ca_id,
+                status="pending"
+            ).first()
+            if existing:
+                print(f"DEBUG: CA request already exists for client {request.client_id}")
+                raise HTTPException(status_code=400, detail="Request already sent")
+        
+        # Handle BLO requests (new functionality)
+        if request.blo_id:
+            print(f"DEBUG: Processing BLO request for BLO ID: {request.blo_id}")
+            blo_user = db.query(User).filter(
+                User.id == request.blo_id,
+                User.user_type == "service_provider",
+                User.service_provider_type.ilike("bank loan officer")
+            ).first()
+            if not blo_user:
+                print(f"DEBUG: BLO user not found for ID: {request.blo_id}")
+                raise HTTPException(status_code=404, detail="Bank Loan Officer not found")
+            
+            # Check for existing BLO request
+            existing = db.query(ServiceRequest).filter_by(
+                client_id=request.client_id,
+                blo_id=request.blo_id,
+                status="pending"
+            ).first()
+            if existing:
+                print(f"DEBUG: BLO request already exists for client {request.client_id}")
+                raise HTTPException(status_code=400, detail="Request already sent")
 
-    # Prevent duplicate pending request
-    existing = db.query(ServiceRequest).filter_by(
-        client_id=request.client_id,
-        ca_id=request.ca_id,
-        status="pending"
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Request already sent")
-
-    new_request = ServiceRequest(
-        client_id=request.client_id,
-        ca_id=request.ca_id,
-        status="pending"
-    )
-    db.add(new_request)
-    db.commit()
-    db.refresh(new_request)
-    return new_request
+        print(f"DEBUG: Creating new ServiceRequest object")
+        new_request = ServiceRequest(
+            client_id=request.client_id,
+            ca_id=request.ca_id,
+            blo_id=request.blo_id,
+            status="pending"
+        )
+        print(f"DEBUG: Adding to database")
+        db.add(new_request)
+        db.commit()
+        db.refresh(new_request)
+        print(f"DEBUG: Request created successfully with ID: {new_request.id}")
+        return new_request
+        
+    except Exception as e:
+        print(f"DEBUG: Exception occurred: {str(e)}")
+        print(f"DEBUG: Exception type: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.patch("/requests/{request_id}", response_model=ServiceRequestOut)
@@ -169,19 +229,70 @@ def update_request_status(request_id: int, update: ServiceRequestUpdate, db: Ses
 
 @app.get("/ca/{ca_id}/requests", response_model=List[ServiceRequestDetailedOut])
 def get_requests_for_ca(ca_id: int, db: Session = Depends(get_db)):
-    requests = db.query(ServiceRequest).filter_by(ca_id=ca_id).options(
+    requests = db.query(ServiceRequest).filter(
+        ServiceRequest.ca_id == ca_id
+    ).options(
         selectinload(ServiceRequest.client),
         selectinload(ServiceRequest.ca)
     ).all()
     return requests
 
-@app.get("/client/{client_id}/requests", response_model=List[ServiceRequestDetailedOut])
-def get_requests_for_client(client_id: int, db: Session = Depends(get_db)):
-    requests = db.query(ServiceRequest).filter_by(client_id=client_id).options(
-        selectinload(ServiceRequest.ca),
-        selectinload(ServiceRequest.client)
+@app.get("/bank_loan_officer/{blo_id}/requests", response_model=List[ServiceRequestDetailedOut])
+def get_requests_for_blo(blo_id: int, db: Session = Depends(get_db)):
+    requests = db.query(ServiceRequest).filter(
+        ServiceRequest.blo_id == blo_id
+    ).options(
+        selectinload(ServiceRequest.client),
+        selectinload(ServiceRequest.blo)
     ).all()
     return requests
+
+@app.get("/client/{client_id}/requests", response_model=List[ServiceRequestDetailedOut])
+def get_requests_for_client(client_id: int, db: Session = Depends(get_db)):
+    try:
+        requests = db.query(ServiceRequest).filter_by(client_id=client_id).options(
+            selectinload(ServiceRequest.ca),
+            selectinload(ServiceRequest.blo),
+            selectinload(ServiceRequest.client)
+        ).all()
+        
+        # Debug: Print what we're returning
+        print(f"Found {len(requests)} requests for client {client_id}")
+        for req in requests:
+            print(f"Request {req.id}: ca_id={req.ca_id}, blo_id={req.blo_id}, status={req.status}")
+            
+        return requests
+    except Exception as e:
+        print(f"Error fetching client requests: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching requests: {str(e)}")
+
+@app.get("/ca/{ca_id}/approved_clients", response_model=List[UserShort])
+def get_approved_clients_for_ca(ca_id: int, db: Session = Depends(get_db)):
+    approved_requests = db.query(ServiceRequest).filter(
+        ServiceRequest.ca_id == ca_id,
+        ServiceRequest.status == "approved"
+    ).all()
+    
+    client_ids = [req.client_id for req in approved_requests]
+    if not client_ids:
+        return []
+
+    clients = db.query(User).filter(User.id.in_(client_ids)).all()
+    return clients
+
+@app.get("/bank_loan_officer/{blo_id}/approved_clients", response_model=List[UserShort])
+def get_approved_clients_for_blo(blo_id: int, db: Session = Depends(get_db)):
+    approved_requests = db.query(ServiceRequest).filter(
+        ServiceRequest.blo_id == blo_id,
+        ServiceRequest.status == "approved"
+    ).all()
+    
+    client_ids = [req.client_id for req in approved_requests]
+    if not client_ids:
+        return []
+
+    clients = db.query(User).filter(User.id.in_(client_ids)).all()
+    return clients
 
 
 if __name__ == "__main__":
