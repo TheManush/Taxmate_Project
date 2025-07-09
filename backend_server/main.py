@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime
 from typing import Optional
 import models, schemas, crud
-from database import SessionLocal, engine
+from database import SessionLocal, engine,get_db
 import uvicorn
 from passlib.context import CryptContext
 from fastapi import APIRouter, Depends
@@ -15,7 +15,7 @@ from models import User, ServiceRequest
 from schemas import ServiceRequestCreate, ServiceRequestOut
 from fastapi import status
 from file_upload import router as upload_router
-
+from chat1 import chat_router
 # Create tables
 models.Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,9 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 app.include_router(upload_router)
+app.include_router(chat_router)
+
+
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -35,13 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @app.post("/signup/", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):

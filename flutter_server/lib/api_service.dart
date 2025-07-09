@@ -106,7 +106,7 @@ class ApiService {
     }
   }
   Future<List<Map<String, dynamic>>> fetchApprovedClients(int caId) async {
-    final response = await http.get(Uri.parse('http://10.0.2.2:8000/ca/$caId/approved_clients'));
+    final response = await http.get(Uri.parse('$baseUrl/ca/$caId/approved_clients'));
     if (response.statusCode == 200) {
       return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
@@ -117,7 +117,7 @@ class ApiService {
   Future<String> getDownloadUrl(int clientId, int caId, String docType) async {
     final encodedDocType = Uri.encodeComponent(docType);
     final response = await http.get(Uri.parse(
-      'http://10.0.2.2:8000/download-url/$clientId/$caId?doc_type=$encodedDocType',
+      '$baseUrl/download-url/$clientId/$caId?doc_type=$encodedDocType',
     ));
 
     if (response.statusCode == 200) {
@@ -189,7 +189,7 @@ class ApiService {
     }
   }
   Future<bool> checkAuditReportExists(int clientId, int caId) async {
-    final url = Uri.parse('http://10.0.2.2:8000/check-file-exists/$clientId/$caId');
+    final url = Uri.parse('$baseUrl/check-file-exists/$clientId/$caId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -199,7 +199,17 @@ class ApiService {
       return false;
     }
   }
+  Future<List<Map<String, dynamic>>> getChatHistory(int user1, int user2) async {
+    final response = await http.get(Uri.parse(
+      '$baseUrl/chat-history/$user1/$user2',
+    ));
 
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load chat history');
+    }
+  }
 
 }
 

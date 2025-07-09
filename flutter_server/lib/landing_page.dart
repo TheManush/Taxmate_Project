@@ -1,69 +1,12 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
+import 'about_us.dart';
 
 class LandingPage extends StatelessWidget {
   final String apiBaseUrl;
 
   const LandingPage({super.key, required this.apiBaseUrl});
-
-  void _showAboutUs(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("About Us"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildDeveloperCard(
-                  name: "Ahnaf",
-                  email: "ahnaf@example.com",
-                  imagePath: "assets/images/nah_id_win.jpg",
-                ),
-                _buildDeveloperCard(
-                  name: "Sakafy",
-                  email: "sakafy@example.com",
-                  imagePath: "assets/images/nah_id_win.jpg",
-                ),
-                _buildDeveloperCard(
-                  name: "Rabbani",
-                  email: "rabbani@example.com",
-                  imagePath: "assets/images/nah_id_win.jpg",
-                ),
-                _buildDeveloperCard(
-                  name: "Arafat",
-                  email: "arafat@example.com",
-                  imagePath: "assets/images/nah_id_win.jpg",
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("Close"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  static Widget _buildDeveloperCard({
-    required String name,
-    required String email,
-    required String imagePath,
-  }) {
-    return Card(
-      child: ListTile(
-        leading: Image.asset(imagePath, width: 40, height: 40),
-        title: Text(name),
-        subtitle: Text(email),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +112,14 @@ class LandingPage extends StatelessWidget {
                   ),
                   SizedBox(height: 20),
                   TextButton(
-                    onPressed: () => _showAboutUs(context),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AboutUsPage(),
+                        ),
+                      );
+                    },
                     child: Text(
                       "About Us",
                       style: TextStyle(color: Colors.white, fontSize: 16),
