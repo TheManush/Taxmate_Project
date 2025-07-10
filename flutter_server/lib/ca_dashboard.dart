@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'client_page_from_CA.dart';
@@ -262,8 +263,8 @@ class _CAdashboardState extends State<CAdashboard> {
           // 👉 Logout
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text("Logout", style: TextStyle(color: Colors.red)),
+            leading: const Icon(Icons.logout),
+            title: const Text("Logout"),
             onTap: () {
               Navigator.of(context).pop();
               Navigator.of(context).pop(); // Go back to login

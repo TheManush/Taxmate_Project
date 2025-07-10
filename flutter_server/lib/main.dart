@@ -15,7 +15,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final FlutterSecureStorage storage;
-  final String apiBaseUrl = 'http://192.168.49.106:8000'; // For Android emulator
+  final String apiBaseUrl = 'http://10.33.27.157:8000'; // For Android emulator
 
   const MyApp({super.key, required this.storage});
 

@@ -143,7 +143,7 @@ class ApiService {
     }
   }
   Future<List<Map<String, dynamic>>> fetchApprovedClients(int caId) async {
-    final response = await http.get(Uri.parse('http://192.168.49.106:8000/ca/$caId/approved_clients'));
+    final response = await http.get(Uri.parse('http://10.33.27.157:8000/ca/$caId/approved_clients'));
     if (response.statusCode == 200) {
       return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
@@ -290,6 +290,27 @@ class ApiService {
         return 'application/octet-stream';
     }
   }
+  Future<bool> checkAuditReportExists(int clientId, int caId) async {
+    final url = Uri.parse('$baseUrl/check-file-exists/$clientId/$caId');
+    final response = await http.get(url);
 
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['exists'] ?? false;
+    } else {
+      return false;
+    }
+  }
+  Future<List<Map<String, dynamic>>> getChatHistory(int user1, int user2) async {
+    final response = await http.get(Uri.parse(
+      '$baseUrl/chat-history/$user1/$user2',
+    ));
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load chat history');
+    }
+  }
 }
 
