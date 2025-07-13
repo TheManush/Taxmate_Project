@@ -6,6 +6,9 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
 def create_user(db: Session, user: dict):
+    is_approved = True
+    if user["user_type"] == "service_provider":
+        is_approved = False  # require admin approval
     db_user = models.User(
         user_type=user["user_type"],
         client_type=user.get("client_type"),
@@ -22,8 +25,10 @@ def create_user(db: Session, user: dict):
         tin_number=user.get("tin_number"),
         business_type=user.get("business_type"),
         experience=user.get("experience"),
-        qualification=user.get("qualification")
+        qualification=user.get("qualification"),
+        is_approved=is_approved
     )
+    
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

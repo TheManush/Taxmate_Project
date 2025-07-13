@@ -78,8 +78,15 @@ class _SignUpPageState extends State<SignUpPage> {
         );
 
         if (response.statusCode == 201) {
+          final responseData = jsonDecode(response.body);
+          final userType = responseData['user_type'];
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful! Please login.')),
+            SnackBar(
+              content: Text(userType == 'service_provider'
+                  ? 'Signup successful! Awaiting admin approval.'
+                  : 'Signup successful! Please login.'),
+            ),
           );
           widget.onToggleLogin();
         } else {
@@ -137,7 +144,6 @@ class _SignUpPageState extends State<SignUpPage> {
                 items: const [
                   DropdownMenuItem(value: 'Client', child: Text('Client')),
                   DropdownMenuItem(value: 'service_provider', child: Text('Service Provider')),
-                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
                 ],
                 onChanged: (value) {
                   setState(() {

@@ -8,12 +8,14 @@ import 'api_service.dart';
 class ChatPage extends StatefulWidget {
   final int senderId;
   final int receiverId;
+  final String receiverName;
   final ApiService apiService;
 
   const ChatPage({
     super.key,
     required this.senderId,
     required this.receiverId,
+    required this.receiverName,
     required this.apiService,
   });
 
@@ -54,7 +56,8 @@ class _ChatPageState extends State<ChatPage> {
 
   void _connectWebSocket() {
     _channel = IOWebSocketChannel.connect(
-      Uri.parse('ws://10.33.27.157:8000/ws/chat/${widget.senderId}'),
+      Uri.parse('ws://192.168.0.101:8000/ws/chat/${widget.senderId}'),
+      //Uri.parse('ws://10.0.2.2:8000/ws/chat/${widget.senderId}'),
     );
 
     _channel.stream.listen((event) {
@@ -138,7 +141,13 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(
+        title: Text(
+          widget.receiverName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       resizeToAvoidBottomInset: true, // This ensures the scaffold resizes when keyboard appears
       body: Column(
         children: [

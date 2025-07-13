@@ -1,24 +1,26 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+
+# Standard library imports
+from datetime import date, datetime
+from typing import Optional, List
+
+# Third-party imports
+from fastapi import Body, FastAPI, Depends, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from datetime import date, datetime
-from typing import Optional
-import models, schemas, crud
-from database import SessionLocal, engine,get_db
 import uvicorn
 from passlib.context import CryptContext
-from fastapi import APIRouter, Depends
-from typing import List
-from models import User  
-from schemas import UserOut, UserShort
+
+# Local app imports
+import models, schemas, crud
+from database import SessionLocal, engine, get_db
 from models import User, ServiceRequest
-from schemas import ServiceRequestCreate, ServiceRequestOut
-from fastapi import status
+from schemas import UserOut, UserShort, ServiceRequestCreate, ServiceRequestOut
 from file_upload import router as upload_router
 from chat1 import chat_router
+from fcm_utils import send_fcm_v1_notification
+
 # Create tables
 models.Base.metadata.create_all(bind=engine)
-
 
 app = FastAPI()
 
@@ -36,6 +38,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Dependency to get DB session
+
+# Endpoint to register/update FCM token for a user
+@app.post("/register_fcm_token/")
+def register_fcm_token(user_id: int = Body(...), fcm_token: str = Body(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.fcm_token = fcm_token
+    db.commit()
+    return {"message": "FCM token updated successfully"}
 # Dependency to get DB session
 
 
@@ -87,7 +100,12 @@ def login(request: schemas.UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect password"
         )
-
+     # Check approval for service providers
+    if user.user_type == "service_provider" and not user.is_approved:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending admin approval"
+        )
     return {
         "status": "success",
         "message": "Login successful",
@@ -289,6 +307,32 @@ def get_approved_clients_for_blo(blo_id: int, db: Session = Depends(get_db)):
 
     clients = db.query(User).filter(User.id.in_(client_ids)).all()
     return clients
+
+
+@app.get("/admin/pending_users/")
+def get_pending_service_providers(db: Session = Depends(get_db)):
+    pending_users = db.query(models.User).filter(
+        models.User.user_type == "service_provider",
+        models.User.is_approved == False
+    ).all()
+    return pending_users
+
+# ✅ Approve a specific service provider by ID
+@app.post("/admin/approve_user/{user_id}")
+def approve_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    # Check if user exists and is a service provider
+    if not user or user.user_type != "service_provider":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found or not a service provider"
+        )
+
+    # Update approval status
+    user.is_approved = True
+    db.commit()
+    return {"message": f"{user.full_name} has been approved."}
 
 
 if __name__ == "__main__":

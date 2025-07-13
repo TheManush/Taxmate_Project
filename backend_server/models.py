@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date,ForeignKey,DateTime, Enum
+from sqlalchemy import Column, Integer, String, Date,ForeignKey,DateTime, Enum,Boolean
 from database import Base
 from datetime import datetime,timezone
 from sqlalchemy.orm import relationship
@@ -15,7 +15,7 @@ class User(Base):
     phone = Column(String(20), nullable=False)
     address = Column(String, nullable=False)
     password = Column(String, nullable=False)
-    
+    is_approved = Column(Boolean, default=True)
     # Client fields
     profession = Column(String(100), nullable=True)
     gender = Column(String(10), nullable=True)
@@ -30,6 +30,9 @@ class User(Base):
     experience = Column(String(50), nullable=True)
     qualification = Column(String, nullable=True)
     
+    # FCM token for push notifications
+    fcm_token = Column(String(255), nullable=True)
+
     #relationships
     service_requests_sent = relationship("ServiceRequest", back_populates="client", foreign_keys='ServiceRequest.client_id')
     service_requests_received = relationship("ServiceRequest", back_populates="ca", foreign_keys='ServiceRequest.ca_id')

@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -6,6 +7,8 @@ import 'api_service.dart';
 import 'client_dashboard.dart';
 import 'ca_dashboard.dart';
 import 'blo_dashboard.dart';
+import 'admin.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggle;
@@ -22,10 +25,62 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  @override
+  void initState() {
+    super.initState();
+    _requestNotificationPermission();
+    _setupFcmTokenRefreshListener();
+  }
+
+  // Request notification permission for Android 13+
+  Future<void> _requestNotificationPermission() async {
+    final messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission();
+  }
+
+  // Listen for FCM token refresh and update backend
+  void _setupFcmTokenRefreshListener() {
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      // Get userId from secure storage
+      String? userId = await _secureStorage.read(key: 'id');
+      if (userId != null) {
+        try {
+          await http.post(
+            Uri.parse('${widget.apiBaseUrl}/register_fcm_token/'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': int.tryParse(userId),
+              'fcm_token': newToken,
+            }),
+          );
+        } catch (e) {
+          // Optionally handle error
+        }
+      }
+    });
+  }
+  Future<void> _registerFcmToken(int userId) async {
+    try {
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await http.post(
+          Uri.parse('${widget.apiBaseUrl}/register_fcm_token/'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_id': userId,
+            'fcm_token': fcmToken,
+          }),
+        );
+      }
+    } catch (e) {
+      // Optionally handle error
+    }
+  }
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
@@ -55,8 +110,22 @@ class _LoginPageState extends State<LoginPage> {
               responseData.containsKey('data')) {
             final data = responseData['data'];
 
+            // Store login info for persistence
+            await _secureStorage.write(key: 'id', value: data['id'].toString());
+            await _secureStorage.write(key: 'full_name', value: data['full_name'] ?? data['fullName'] ?? '');
+            await _secureStorage.write(key: 'email', value: data['email'] ?? '');
+            await _secureStorage.write(key: 'dob', value: data['dob'] ?? '');
+            await _secureStorage.write(key: 'gender', value: data['gender'] ?? '');
+            await _secureStorage.write(key: 'user_type', value: data['user_type'] ?? data['userType'] ?? '');
+            await _secureStorage.write(key: 'client_type', value: data['client_type'] ?? data['clientType'] ?? '');
+            await _secureStorage.write(key: 'service_provider_type', value: data['service_provider_type'] ?? data['serviceProviderType'] ?? '');
+
+            // Register/update FCM token after login
+            await _registerFcmToken(data['id']);
+
             // Navigate based on user type
             _navigateBasedOnUserType(data);
+
           } else {
             throw Exception('Invalid response format');
           }
@@ -115,7 +184,23 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       );
-    } else if (userType.toLowerCase() == 'service_provider') {
+    } else if (userType.toLowerCase() == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AdminDashboard(
+            adminId: userId,
+            fullName: fullName,
+            email: email,
+            dob: dob,
+            gender: gender,
+            userType: userType,
+            serviceProviderType: serviceProviderType,
+            apiService: apiService,
+          ),
+        ),
+      );
+    }else if (userType.toLowerCase() == 'service_provider') {
         // Normalize the service provider type for comparison
         final normalizedType = serviceProviderType?.toLowerCase().replaceAll(' ', '_');
         

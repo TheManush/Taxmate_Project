@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_service.dart';
 import 'tax_audit_page.dart';
 import 'bank_loan_page.dart';
 import 'financial_planning_page.dart';
 import 'client_profile_page.dart';
+import 'landing_page.dart'; // <-- import your LandingPage here
 
-class ClientDashboard extends StatelessWidget {
+class ClientDashboard extends StatefulWidget {
   final int clientId;
   final String fullName;
   final String email;
@@ -26,6 +28,23 @@ class ClientDashboard extends StatelessWidget {
     this.clientType,
     required this.apiService,
   });
+
+  @override
+  _ClientDashboardState createState() => _ClientDashboardState();
+}
+
+class _ClientDashboardState extends State<ClientDashboard> {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+  // Getters to access widget properties easily
+  int get clientId => widget.clientId;
+  String get fullName => widget.fullName;
+  String get email => widget.email;
+  String get dob => widget.dob;
+  String get gender => widget.gender;
+  String get userType => widget.userType;
+  String? get clientType => widget.clientType;
+  ApiService get apiService => widget.apiService;
 
   @override
   Widget build(BuildContext context) {
@@ -524,9 +543,19 @@ class ClientDashboard extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                Navigator.pop(context); // Go back to login
+
+                // Clear stored credentials
+                await _secureStorage.deleteAll();
+
+                // Navigate to LandingPage, removing all previous routes
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => LandingPage(apiBaseUrl: apiService.baseUrl),
+                  ),
+                      (route) => false,
+                );
               },
               child: const Text(
                 'Logout',

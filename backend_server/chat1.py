@@ -1,7 +1,9 @@
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
 from database import SessionLocal, get_db
-from models import Message
+from models import Message, User
+from fcm_utils import send_fcm_v1_notification
 from datetime import datetime, timezone
 
 chat_router = APIRouter()
@@ -29,14 +31,33 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
             )
             db.add(new_message)
             db.commit()
-            db.close()
 
             # Forward message if receiver is online
             if receiver_id in connected_users:
-                await connected_users[receiver_id].send_json({
-                    "sender_id": user_id,
-                    "message": message
-                })
+                try:
+                    await connected_users[receiver_id].send_json({
+                        "sender_id": user_id,
+                        "message": message
+                    })
+                except Exception:
+                    # Remove user if their websocket is closed or errored
+                    connected_users.pop(receiver_id, None)
+            else:
+                # Send FCM notification if receiver is offline
+                receiver = db.query(User).filter(User.id == receiver_id).first()
+                sender = db.query(User).filter(User.id == user_id).first()
+                if receiver and receiver.fcm_token:
+                    send_fcm_v1_notification(
+                        receiver.fcm_token,
+                        title=sender.full_name if sender else str(user_id),  # sender's name as title
+                        body=message,
+                        data={
+                            "sender_id": user_id,
+                            "sender_name": sender.full_name if sender else str(user_id),
+                            "message": message
+                        }
+                    )
+            db.close()
 
     except WebSocketDisconnect:
         connected_users.pop(user_id, None)

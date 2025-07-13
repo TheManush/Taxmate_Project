@@ -112,6 +112,7 @@ class _ClientsPageState extends State<ClientsPage> {
                                   builder: (_) => ChatPage(
                                     senderId: widget.caId,
                                     receiverId: client['id'],
+                                    receiverName: client['name'] ?? 'Client',
                                     apiService: widget.apiService,
                                   ),
                                 ),

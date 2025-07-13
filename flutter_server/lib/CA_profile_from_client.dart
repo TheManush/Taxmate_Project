@@ -489,6 +489,7 @@ class _CA_profileState extends State<CA_profile> {
                       builder: (_) => ChatPage(
                         senderId: widget.clientId,
                         receiverId: widget.caData['id'],
+                        receiverName: widget.caData['full_name'] ?? 'CA',
                         apiService: widget.apiService,
                       ),
                     ),

@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'client_page_from_CA.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'landing_page.dart';
+import 'ca_profile_page.dart';
 class CAdashboard extends StatefulWidget {
   final int caId;
   final String fullName;
@@ -94,6 +97,66 @@ class _CAdashboardState extends State<CAdashboard> {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            // Profile Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => CAProfilePage(
+                        caId: widget.caId,
+                        fullName: widget.fullName,
+                        email: widget.email,
+                        dob: widget.dob,
+                        gender: widget.gender,
+                        userType: widget.userType,
+                        serviceProviderType: widget.serviceProviderType,
+                        apiService: widget.apiService,
+                      ),
+                    ),
+                  );
+                },
+                child: Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.green[700],
+                          child: Text(
+                            _getFirstName()[0],
+                            style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.fullName,
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.email,
+                                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.green, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
 
@@ -211,7 +274,7 @@ class _CAdashboardState extends State<CAdashboard> {
 
   Widget _buildCADrawer(BuildContext context) {
     return Drawer(
-      child: ListView(
+      child: Column(
         children: [
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
@@ -260,14 +323,42 @@ class _CAdashboardState extends State<CAdashboard> {
             },
           ),
 
-          // 👉 Logout
+          const Spacer(),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text("Logout"),
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(); // Go back to login
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
+              "Logout",
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () async {
+              final shouldLogout = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                    TextButton(
+                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ],
+                ),
+              );
+              if (shouldLogout == true) {
+                final storage = FlutterSecureStorage();
+                await storage.deleteAll(); // Clear all saved login info
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => LandingPage(apiBaseUrl: widget.apiService.baseUrl),
+                  ),
+                      (Route<dynamic> route) => false,
+                );
+              }
             },
           ),
         ],

@@ -14,7 +14,7 @@ async def upload_file(
     user_id: int,
     service_provider_id: int,
     file: UploadFile = File(...),
-    doc_type: str = Query(..., description="Document type: NID, TIN, Salary Certificate, Bank Statement"),
+    doc_type: str = Query(..., description="Document type: NID, TIN, Salary Certificate, Bank Statement, Audit Report"),
     service_type: str = Query("ca", description="Service type: ca or blo")
 ):
     try:
@@ -69,6 +69,7 @@ def generate_download_url(
         "tin certificate": "tin",
         "salary certificate": "salary_certificate",
         "bank statement": "bank_statement",
+        "audit report": "audit_report",
     }
     key = doc_type.strip().lower()
     file_name = mapping.get(key)
@@ -90,3 +91,16 @@ def generate_download_url(
         return {"url": signed_url["signedURL"]}
     except Exception:
         raise HTTPException(status_code=404, detail=f"File not found at path: {file_path}")
+
+@router.get("/check-file-exists/{client_id}/{ca_id}")
+def check_audit_file_exists(client_id: int, ca_id: int):
+    try:
+        folder_path = f"client{client_id}/ca{ca_id}"
+        result = supabase.storage.from_("client-documents").list(folder_path)
+
+        for obj in result:
+            if obj.get("name") == "audit_report.pdf":
+                return {"exists": True}
+        return {"exists": False}
+    except Exception as e:
+        return {"exists": False, "error": str(e)}

@@ -143,7 +143,8 @@ class ApiService {
     }
   }
   Future<List<Map<String, dynamic>>> fetchApprovedClients(int caId) async {
-    final response = await http.get(Uri.parse('http://10.33.27.157:8000/ca/$caId/approved_clients'));
+    final response = await http.get(Uri.parse('$baseUrl/ca/$caId/approved_clients'));
+
     if (response.statusCode == 200) {
       return List<Map<String, dynamic>>.from(jsonDecode(response.body));
     } else {
@@ -312,5 +313,23 @@ class ApiService {
       throw Exception('Failed to load chat history');
     }
   }
+  //admin stuff
+  Future<List<dynamic>> fetchPendingServiceProviders() async {
+    final response = await http.get(Uri.parse('$baseUrl/admin/pending_users/'));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load pending service providers');
+    }
+  }
+
+  Future<void> approveServiceProvider(int userId) async {
+    final response = await http.post(Uri.parse('$baseUrl/admin/approve_user/$userId'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to approve user');
+    }
+  }
+
 }
 

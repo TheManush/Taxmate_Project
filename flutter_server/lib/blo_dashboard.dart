@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'client_page_from_BLO.dart'; // You should create this page similar to client_page_from_CA
-
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'landing_page.dart';
 class BankLoanOfficerDashboard extends StatefulWidget {
   final int officerId;
   final String fullName;
@@ -244,9 +245,16 @@ class _BankLoanOfficerDashboardState extends State<BankLoanOfficerDashboard> {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout", style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
+            onTap: () async {
+              final storage = FlutterSecureStorage();
+              await storage.deleteAll(); // Clear all saved login info
+
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => LandingPage(apiBaseUrl: widget.apiService.baseUrl),
+                ),
+                    (Route<dynamic> route) => false,
+              );
             },
           ),
         ],
