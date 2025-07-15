@@ -331,5 +331,12 @@ class ApiService {
     }
   }
 
+  Future<void> rejectServiceProvider(int userId) async {
+    final response = await http.post(Uri.parse('$baseUrl/admin/reject_user/$userId'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reject user');
+    }
+  }
+
 }
 

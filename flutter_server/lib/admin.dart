@@ -52,6 +52,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  void _rejectUser(int userId) async {
+    try {
+      await widget.apiService.rejectServiceProvider(userId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User rejected successfully')),
+      );
+      setState(() {
+        _pendingProviders = widget.apiService.fetchPendingServiceProviders();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Rejection failed: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,10 +95,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: ListTile(
                     title: Text(user['full_name']),
                     subtitle: Text('${user['email']} • ${user['service_provider_type']}'),
-                    trailing: ElevatedButton(
-                      onPressed: () => _approveUser(user['id']),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                      child: const Text("Approve"),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _approveUser(user['id']),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          child: const Text("Approve"),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => _rejectUser(user['id']),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          child: const Text("Reject"),
+                        ),
+                      ],
                     ),
                   ),
                 );

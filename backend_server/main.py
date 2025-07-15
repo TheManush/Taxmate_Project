@@ -334,6 +334,23 @@ def approve_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": f"{user.full_name} has been approved."}
 
+# ✅ Reject a specific service provider by ID
+@app.post("/admin/reject_user/{user_id}")
+def reject_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+
+    # Check if user exists and is a service provider
+    if not user or user.user_type != "service_provider":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found or not a service provider"
+        )
+
+    # Delete the user (rejection means removal)
+    db.delete(user)
+    db.commit()
+    return {"message": f"{user.full_name} has been rejected and removed."}
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

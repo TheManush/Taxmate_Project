@@ -81,14 +81,26 @@ class _SignUpPageState extends State<SignUpPage> {
           final responseData = jsonDecode(response.body);
           final userType = responseData['user_type'];
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(userType == 'service_provider'
-                  ? 'Signup successful! Awaiting admin approval.'
-                  : 'Signup successful! Please login.'),
-            ),
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Success!'),
+                content: Text(userType == 'service_provider'
+                    ? 'Signup successful! Your account is awaiting admin approval. You will be notified once approved.'
+                    : 'Signup successful! Please login with your credentials.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      widget.onToggleLogin(); // Go to login
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
           );
-          widget.onToggleLogin();
         } else {
           final error = jsonDecode(response.body)['detail'];
           ScaffoldMessenger.of(context).showSnackBar(
@@ -273,8 +285,41 @@ class _SignUpPageState extends State<SignUpPage> {
 
               // Service Provider Fields
               if (_selectedUserType == 'service_provider') ...[
-                _buildTextField(_experienceController, "Years of Experience", Icons.timeline,
-                    keyboardType: TextInputType.number),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _gender,
+                  decoration: InputDecoration(
+                    labelText: "Gender",
+                    prefixIcon: Icon(Icons.transgender),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  ),
+                  isExpanded: true,
+                  items: ["Male", "Female", "Other"].map((gender) {
+                    return DropdownMenuItem(value: gender, child: Text(gender));
+                  }).toList(),
+                  onChanged: (value) => setState(() => _gender = value),
+                  validator: (value) => value == null ? "Select gender" : null,
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: _pickDate,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: "Date of Birth",
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    ),
+                    child: Text(
+                      _selectedDate == null
+                          ? "Select Date"
+                          : DateFormat('MMM dd, yyyy').format(_selectedDate!),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(_experienceController, "Years of Experience", Icons.timeline),
                 _buildTextField(
                   _degreeController,
                   _selectedServiceProviderType == 'Chartered Accountant'

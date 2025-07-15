@@ -25,8 +25,8 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final FlutterSecureStorage storage;
-  //final String apiBaseUrl = 'http://192.168.0.101:8000';
-  final String apiBaseUrl = 'http://10.0.2.2:8000';
+  final String apiBaseUrl = 'http://192.168.0.101:8000';
+ // final String apiBaseUrl = 'http://10.0.2.2:8000';
   const MyApp({super.key, required this.storage});
 
   Future<Widget> _determineStartScreen() async {
