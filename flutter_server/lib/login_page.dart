@@ -8,7 +8,10 @@ import 'client_dashboard.dart';
 import 'ca_dashboard.dart';
 import 'blo_dashboard.dart';
 import 'admin.dart';
+import 'fp_dashboard.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'recovery_pass.dart';   //add this extra line for password recovery
 
 class LoginPage extends StatefulWidget {
   final VoidCallback onToggle;
@@ -236,7 +239,25 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         );
-      } else {
+      } /////fb
+      else if (normalizedType == 'financial_planner') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FPDashboard(
+            fpId: userId,
+            fullName: fullName,
+            email: email,
+            dob: dob,
+            gender: gender,
+            userType: userType,
+            serviceProviderType: serviceProviderType,
+            apiService: apiService,
+          ),
+        ),
+      );
+    } 
+       else {
         _showErrorDialog('Unsupported service provider type: $serviceProviderType');
       }
     } else {
@@ -414,10 +435,20 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 70),
 
                   // Forgot Password
-                  const Text(
-                    "Forgot Password?",
-                    style: TextStyle(
-                      color: Color.fromRGBO(155, 100, 255, 1),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RecoveryPass(apiBaseUrl: widget.apiBaseUrl),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Forgot Password?",
+                      style: TextStyle(
+                        color: Color.fromRGBO(155, 100, 255, 1),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
