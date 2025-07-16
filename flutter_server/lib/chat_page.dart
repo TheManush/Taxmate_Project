@@ -56,7 +56,8 @@ class _ChatPageState extends State<ChatPage> {
 
   void _connectWebSocket() {
     _channel = IOWebSocketChannel.connect(
-      Uri.parse('ws://192.168.0.101:8000/ws/chat/${widget.senderId}'),
+      Uri.parse('ws://10.33.22.39:8000/ws/chat/${widget.senderId}'),
+      //Uri.parse('ws://192.168.49.102:8000/ws/chat/${widget.senderId}'),
       //Uri.parse('ws://10.0.2.2:8000/ws/chat/${widget.senderId}'),
     );
 

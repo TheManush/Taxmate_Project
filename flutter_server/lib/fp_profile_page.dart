@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
-class CAProfilePage extends StatelessWidget {
-  final int caId;
+class FPProfilePage extends StatelessWidget {
+  final int fpId;
   final String fullName;
   final String email;
   final String dob;
@@ -11,9 +11,9 @@ class CAProfilePage extends StatelessWidget {
   final String? serviceProviderType;
   final ApiService apiService;
 
-  const CAProfilePage({
-    super.key,
-    required this.caId,
+  const FPProfilePage({
+    Key? key,
+    required this.fpId,
     required this.fullName,
     required this.email,
     required this.dob,
@@ -21,7 +21,7 @@ class CAProfilePage extends StatelessWidget {
     required this.userType,
     this.serviceProviderType,
     required this.apiService,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class CAProfilePage extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Colors.green[800],
+        backgroundColor: Colors.purple[800],
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -53,7 +53,7 @@ class CAProfilePage extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green[800]!, Colors.green[600]!],
+                  colors: [Colors.purple[800]!, Colors.purple[600]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -81,11 +81,11 @@ class CAProfilePage extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        _getInitials(),
+                        _getInitials(fullName),
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green[800],
+                          color: Colors.purple[800],
                         ),
                       ),
                     ),
@@ -118,7 +118,7 @@ class CAProfilePage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      serviceProviderType ?? 'Service Provider',
+                      serviceProviderType ?? 'Financial Planner',
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.white,
@@ -232,7 +232,7 @@ class CAProfilePage extends StatelessWidget {
         children: [
           _buildInfoRow(
             'User ID',
-            caId.toString(),
+            fpId.toString(),
             Icons.badge_outlined,
           ),
           const Divider(height: 30),
@@ -244,7 +244,7 @@ class CAProfilePage extends StatelessWidget {
           const Divider(height: 30),
           _buildInfoRow(
             'Service Provider Type',
-            serviceProviderType ?? 'Not specified',
+            serviceProviderType ?? 'Financial Planner',
             Icons.business_outlined,
           ),
         ],
@@ -262,12 +262,12 @@ class CAProfilePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.green[800]!.withOpacity(0.1),
+            color: Colors.purple[800]!.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             icon,
-            color: Colors.green[800],
+            color: Colors.purple[800],
             size: 20,
           ),
         ),
@@ -300,14 +300,13 @@ class CAProfilePage extends StatelessWidget {
     );
   }
 
-  String _getInitials() {
-    List<String> names = fullName.split(' ');
-    String initials = '';
-    for (int i = 0; i < names.length && i < 2; i++) {
-      if (names[i].isNotEmpty) {
-        initials += names[i][0].toUpperCase();
-      }
+  String _getInitials(String name) {
+    List<String> names = name.split(' ');
+    if (names.length >= 2) {
+      return '${names[0][0]}${names[1][0]}'.toUpperCase();
+    } else if (names.isNotEmpty) {
+      return names[0][0].toUpperCase();
     }
-    return initials.isEmpty ? 'U' : initials;
+    return 'FP'; // Default initials for Financial Planner
   }
 }

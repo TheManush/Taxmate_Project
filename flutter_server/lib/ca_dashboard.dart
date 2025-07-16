@@ -5,6 +5,7 @@ import 'client_page_from_CA.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'landing_page.dart';
 import 'ca_profile_page.dart';
+
 class CAdashboard extends StatefulWidget {
   final int caId;
   final String fullName;
@@ -25,11 +26,12 @@ class CAdashboard extends StatefulWidget {
     required this.userType,
     this.serviceProviderType,
     required this.apiService,
-
   });
+
   @override
   _CAdashboardState createState() => _CAdashboardState();
 }
+
 class _CAdashboardState extends State<CAdashboard> {
   late Future<List<Map<String, dynamic>>> _pendingRequests;
   bool _showOnlyPending = false;
@@ -100,82 +102,18 @@ class _CAdashboardState extends State<CAdashboard> {
               ),
             ),
 
-            // Profile Card
+            // Main Content - Removed Profile Card
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => CAProfilePage(
-                        caId: widget.caId,
-                        fullName: widget.fullName,
-                        email: widget.email,
-                        dob: widget.dob,
-                        gender: widget.gender,
-                        userType: widget.userType,
-                        serviceProviderType: widget.serviceProviderType,
-                        apiService: widget.apiService,
-                      ),
-                    ),
-                  );
-                },
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Colors.green[700],
-                          child: Text(
-                            _getFirstName()[0],
-                            style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.fullName,
-                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.email,
-                                style: const TextStyle(fontSize: 14, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.arrow_forward_ios, color: Colors.green, size: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Main Content
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         'Client Requests',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headlineSmall,
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       Row(
                         children: [
@@ -193,7 +131,7 @@ class _CAdashboardState extends State<CAdashboard> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  _buildRequestList(), // Added request list widget
+                  _buildRequestList(),
                 ],
               ),
             ),
@@ -267,9 +205,7 @@ class _CAdashboardState extends State<CAdashboard> {
   }
 
   String _getFirstName() {
-    return widget.fullName
-        .split(' ')
-        .first;
+    return widget.fullName.split(' ').first;
   }
 
   Widget _buildCADrawer(BuildContext context) {
@@ -294,6 +230,29 @@ class _CAdashboardState extends State<CAdashboard> {
                 ),
               ),
             ),
+          ),
+
+          // 👉 Profile option added to drawer
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text("My Profile"),
+            onTap: () {
+              Navigator.of(context).pop(); // Close the drawer
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => CAProfilePage(
+                    caId: widget.caId,
+                    fullName: widget.fullName,
+                    email: widget.email,
+                    dob: widget.dob,
+                    gender: widget.gender,
+                    userType: widget.userType,
+                    serviceProviderType: widget.serviceProviderType,
+                    apiService: widget.apiService,
+                  ),
+                ),
+              );
+            },
           ),
 
           // 👉 Pending Requests (current page)
@@ -343,7 +302,8 @@ class _CAdashboardState extends State<CAdashboard> {
                       onPressed: () => Navigator.of(context).pop(false),
                     ),
                     TextButton(
-                      child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                      child: const Text('Logout',
+                          style: TextStyle(color: Colors.red)),
                       onPressed: () => Navigator.of(context).pop(true),
                     ),
                   ],
@@ -354,7 +314,8 @@ class _CAdashboardState extends State<CAdashboard> {
                 await storage.deleteAll(); // Clear all saved login info
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (context) => LandingPage(apiBaseUrl: widget.apiService.baseUrl),
+                    builder: (context) =>
+                        LandingPage(apiBaseUrl: widget.apiService.baseUrl),
                   ),
                       (Route<dynamic> route) => false,
                 );

@@ -7,6 +7,7 @@ import 'api_service.dart';
 import 'client_dashboard.dart';
 import 'ca_dashboard.dart';
 import 'blo_dashboard.dart';
+import 'fp_dashboard.dart';
 import 'admin.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -226,6 +227,22 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(
             builder: (context) => BankLoanOfficerDashboard(
               officerId: userId,
+              fullName: fullName,
+              email: email,
+              dob: dob,
+              gender: gender,
+              userType: userType,
+              serviceProviderType: serviceProviderType,
+              apiService: apiService,
+            ),
+          ),
+        );
+      } else if (normalizedType == 'financial_planner') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FinancialPlannerDashboard(
+              plannerId: userId,
               fullName: fullName,
               email: email,
               dob: dob,

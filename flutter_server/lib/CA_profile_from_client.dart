@@ -281,6 +281,8 @@ class _CA_profileState extends State<CA_profile> {
                     color: Color(0xFF1E293B),
                     fontWeight: FontWeight.w600,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
               ],
             ),
@@ -385,20 +387,23 @@ class _CA_profileState extends State<CA_profile> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFD97706).withOpacity(0.3)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.hourglass_empty,
             color: Color(0xFFD97706),
             size: 24,
           ),
-          SizedBox(width: 12),
-          Text(
-            'Request Pending Approval',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFD97706),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              'Request Pending Approval',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFD97706),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -419,20 +424,23 @@ class _CA_profileState extends State<CA_profile> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.check_circle_outline,
                 color: Color(0xFF10B981),
                 size: 24,
               ),
-              SizedBox(width: 12),
-              Text(
-                'Request Approved',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF10B981),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  'Request Approved',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF10B981),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -466,7 +474,7 @@ class _CA_profileState extends State<CA_profile> {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3B82F6),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

@@ -159,7 +159,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const FinancialPlanningPage(),
+                          builder: (context) => FinancialPlanningPage(
+                            apiService: apiService,
+                            clientId: clientId,
+                          ),
                         ),
                       );
                     },
@@ -330,7 +333,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const FinancialPlanningPage(),
+                        builder: (context) => FinancialPlanningPage(
+                          apiService: apiService,
+                          clientId: clientId,
+                        ),
                       ),
                     );
                   },

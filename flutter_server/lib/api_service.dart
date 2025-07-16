@@ -324,12 +324,168 @@ class ApiService {
     }
   }
 
+  
   Future<void> approveServiceProvider(int userId) async {
     final response = await http.post(Uri.parse('$baseUrl/admin/approve_user/$userId'));
     if (response.statusCode != 200) {
       throw Exception('Failed to approve user');
     }
   }
+  Future<void> rejectServiceProvider(int userId) async {
+    final response = await http.post(Uri.parse('$baseUrl/admin/reject_user/$userId'));
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reject user');
+    }
+  }
+  // Loan Request Methods
+  Future<http.Response> submitLoanRequest(int clientId, Map<String, dynamic> loanRequest) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/loan_requests/?client_id=$clientId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(loanRequest),
+    );
+    return response;
+  }
 
+  Future<List<Map<String, dynamic>>> getLoanRequestsForBLO(int bloId) async {
+    final response = await http.get(Uri.parse('$baseUrl/blo/$bloId/loan_requests'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load loan requests');
+    }
+  }
+
+  Future<Map<String, dynamic>> getLoanRequestDetails(int loanRequestId) async {
+    final response = await http.get(Uri.parse('$baseUrl/loan_requests/$loanRequestId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load loan request details');
+    }
+  }
+
+  // Update loan status - sends status update to client
+  Future<void> updateLoanStatus(int loanRequestId, String status, String message) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/loan_requests/$loanRequestId/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'status': status,
+        'message': message,
+        'updated_at': DateTime.now().toIso8601String(),
+      }),
+    );
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update loan status: ${response.body}');
+    }
+  }
+  
+  // Get loan status for client
+  Future<Map<String, dynamic>?> getLoanStatus(int clientId, int bloId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/loan_status?client_id=$clientId&blo_id=$bloId')
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data;
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      throw Exception('Failed to get loan status: ${response.body}');
+    }
+  }
+
+  // Financial Planner methods
+  Future<List<Map<String, dynamic>>> getFinancialPlanners() async {
+    final response = await get("financial_planners");
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load Financial Planners: ${response.body}');
+    }
+  }
+
+  // Fetch service requests for a Financial Planner
+  Future<List<Map<String, dynamic>>> getFinancialPlannerRequests(int plannerId) async {
+    final response = await http.get(Uri.parse('$baseUrl/financial_planner/$plannerId/requests'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load FP requests');
+    }
+  }
+
+  // Fetch approved clients for a Financial Planner
+  Future<List<Map<String, dynamic>>> getApprovedClientsForFP(int plannerId) async {
+    final response = await http.get(Uri.parse('$baseUrl/financial_planner/$plannerId/approved_clients'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load approved clients for FP');
+    }
+  }
+
+  // Update service request status (approve/reject)
+  Future<void> updateServiceRequestStatus(int requestId, String status) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/requests/$requestId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'status': status}),
+    );
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update request status: ${response.body}');
+    }
+  }
+
+  // FP-specific methods
+  Future<void> sendFPServiceRequest(int clientId, int fpId) async {
+    final Map<String, dynamic> requestData = {
+      'client_id': clientId,
+      'fp_id': fpId,
+    };
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/requests/'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(requestData),
+    );
+
+    if (response.statusCode == 201) {
+      return; // success
+    } else {
+      final error = json.decode(response.body);
+      throw Exception(error['detail'] ?? 'Failed to send FP request');
+    }
+  }
+
+  Future<Map<String, dynamic>?> checkExistingFPRequest(int clientId, int fpId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/client/$clientId/requests'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+
+        for (final request in data) {
+          // Check for FP request
+          if (request['fp'] != null && request['fp']['id'] == fpId) {
+            return request;
+          }
+        }
+
+        return null; // No matching request
+      } else {
+        throw Exception('Failed to fetch client requests: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to fetch client requests: ${e.toString()}');
+    }
+  }
 }
 

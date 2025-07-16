@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -7,7 +8,7 @@ class SignUpPage extends StatefulWidget {
   final VoidCallback onToggleLogin;
   final String apiBaseUrl;
 
-  const SignUpPage({super.key, 
+  const SignUpPage({super.key,
     required this.onToggleLogin,
     required this.apiBaseUrl,
   });
@@ -81,14 +82,26 @@ class _SignUpPageState extends State<SignUpPage> {
           final responseData = jsonDecode(response.body);
           final userType = responseData['user_type'];
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(userType == 'service_provider'
-                  ? 'Signup successful! Awaiting admin approval.'
-                  : 'Signup successful! Please login.'),
-            ),
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Success!'),
+                content: Text(userType == 'service_provider'
+                    ? 'Signup successful! Your account is awaiting admin approval. You will be notified once approved.'
+                    : 'Signup successful! Please login with your credentials.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close dialog
+                      widget.onToggleLogin(); // Go to login
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
           );
-          widget.onToggleLogin();
         } else {
           final error = jsonDecode(response.body)['detail'];
           ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +185,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   onChanged: (value) => setState(() => _selectedClientType = value),
                   validator: (value) => value == null ? "Please select client type" : null,
                 ),
-              
+
               if (_selectedUserType == 'Client' && _selectedClientType != null)
                 const SizedBox(height: 16),
 
@@ -195,7 +208,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   onChanged: (value) => setState(() => _selectedServiceProviderType = value),
                   validator: (value) => value == null ? "Please select type" : null,
                 ),
-              
+
               if (_selectedUserType == 'service_provider' && _selectedServiceProviderType != null)
                 const SizedBox(height: 16),
 
@@ -273,8 +286,41 @@ class _SignUpPageState extends State<SignUpPage> {
 
               // Service Provider Fields
               if (_selectedUserType == 'service_provider') ...[
-                _buildTextField(_experienceController, "Years of Experience", Icons.timeline,
-                    keyboardType: TextInputType.number),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _gender,
+                  decoration: InputDecoration(
+                    labelText: "Gender",
+                    prefixIcon: Icon(Icons.transgender),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  ),
+                  isExpanded: true,
+                  items: ["Male", "Female", "Other"].map((gender) {
+                    return DropdownMenuItem(value: gender, child: Text(gender));
+                  }).toList(),
+                  onChanged: (value) => setState(() => _gender = value),
+                  validator: (value) => value == null ? "Select gender" : null,
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: _pickDate,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: "Date of Birth",
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    ),
+                    child: Text(
+                      _selectedDate == null
+                          ? "Select Date"
+                          : DateFormat('MMM dd, yyyy').format(_selectedDate!),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(_experienceController, "Years of Experience", Icons.timeline),
                 _buildTextField(
                   _degreeController,
                   _selectedServiceProviderType == 'Chartered Accountant'
@@ -341,11 +387,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildTextField(
-    TextEditingController controller, 
-    String label, 
-    IconData icon, {
-    TextInputType? keyboardType,
-  }) {
+      TextEditingController controller,
+      String label,
+      IconData icon, {
+        TextInputType? keyboardType,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
@@ -363,10 +409,10 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Widget _buildPasswordField(
-    TextEditingController controller, 
-    String label, {
-    String? Function(String?)? validator,
-  }) {
+      TextEditingController controller,
+      String label, {
+        String? Function(String?)? validator,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
@@ -379,7 +425,7 @@ class _SignUpPageState extends State<SignUpPage> {
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         ),
         validator: validator ??
-            (value) => value != null && value.length >= 6 ? null : "Minimum 6 characters",
+                (value) => value != null && value.length >= 6 ? null : "Minimum 6 characters",
       ),
     );
   }

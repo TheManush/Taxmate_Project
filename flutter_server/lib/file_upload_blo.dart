@@ -82,7 +82,7 @@ class _FileUploadBLOPageState extends State<FileUploadBLOPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Upload Documents to BLO'),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: Colors.purple[800],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -117,7 +117,7 @@ class _FileUploadBLOPageState extends State<FileUploadBLOPage> {
                       ElevatedButton(
                         onPressed: () => _pickFile(docType),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[700],
+                          backgroundColor: Colors.purple[700],
                           foregroundColor: Colors.white,
                         ),
                         child: const Text('Select File'),
@@ -126,7 +126,7 @@ class _FileUploadBLOPageState extends State<FileUploadBLOPage> {
                       ElevatedButton(
                         onPressed: file != null ? () => _uploadFile(docType) : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[800],
+                          backgroundColor: Colors.purple[800],
                           foregroundColor: Colors.white,
                         ),
                         child: const Text('Upload'),
