@@ -17,6 +17,7 @@ from chat1 import chat_router
 from password_router import password_router
 from fcm_utils import send_fcm_v1_notification
 from financial_report import router as financial_report_router
+from simple_chatbot import AdvancedFinancialChatbot
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
@@ -27,6 +28,10 @@ app.include_router(upload_router)
 app.include_router(chat_router)
 app.include_router(password_router)
 app.include_router(financial_report_router)
+
+# Initialize the financial chatbot
+financial_chatbot = AdvancedFinancialChatbot()
+
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -574,6 +579,21 @@ def get_financial_summary(client_id: int):
         return summary
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chatbot")
+def chat_with_financial_assistant(
+    message: str = Body(..., embed=True),
+    client_id: int = Body(..., embed=True)
+):
+    """
+    Financial chatbot endpoint that provides personalized financial advice.
+    """
+    try:
+        # Generate response using the chatbot
+        response = financial_chatbot.generate_response(message, client_id)
+        return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chatbot error: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

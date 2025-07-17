@@ -5,14 +5,15 @@ import 'financial_data_form.dart';
 import 'financial_summary_page.dart';
 import 'financial_report_download.dart';
 import 'FP_profile_from_client.dart';
+import 'financial_chatbot_page.dart';
 
 class EnhancedFinancialPlanningPage extends StatefulWidget {
   final ApiService apiService;
   final int clientId;
 
   const EnhancedFinancialPlanningPage({
-    super.key, 
-    required this.apiService, 
+    super.key,
+    required this.apiService,
     required this.clientId,
   });
 
@@ -33,7 +34,7 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
     _financialService = FinancialService(widget.apiService.baseUrl);
     _futureFPs = widget.apiService.getFinancialPlanners();
     _checkFinancialData();
-    
+
     // Listen to tab changes to prevent accessing Summary tab
     _tabController.addListener(_handleTabChange);
   }
@@ -75,7 +76,7 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
     setState(() {
       _hasFinancialData = true;
     });
-    
+
     // Show success message and automatically switch to Summary tab
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
@@ -87,7 +88,7 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
             duration: Duration(seconds: 2),
           ),
         );
-        
+
         // Auto-switch to Summary tab after data is saved
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
@@ -121,6 +122,27 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Color(0xFF64748B)),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.chat_bubble_outline,
+              color: Color(0xFF7C3AED),
+            ),
+            tooltip: 'Financial Assistant',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FinancialChatbotPage(
+                    apiService: widget.apiService,
+                    clientId: widget.clientId,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: const Color(0xFF7C3AED),
@@ -137,7 +159,7 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.analytics, 
+                      Icons.analytics,
                       size: 20,
                       color: _hasFinancialData ? null : Colors.grey[400],
                     ),
@@ -258,7 +280,7 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
                 'Start by adding your income, expenses, and assets',
                 Icons.input,
                 const Color(0xFF10B981),
-                () => _tabController.animateTo(1),
+                    () => _tabController.animateTo(1),
               ),
             ),
             const SizedBox(width: 12),
@@ -268,7 +290,7 @@ class _EnhancedFinancialPlanningPageState extends State<EnhancedFinancialPlannin
                 'See your financial overview and insights',
                 Icons.analytics,
                 const Color(0xFF3B82F6),
-                () => _tabController.animateTo(2),
+                    () => _tabController.animateTo(2),
               ),
             ),
           ],

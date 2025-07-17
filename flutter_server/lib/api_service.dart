@@ -480,5 +480,20 @@ class ApiService {
     }
   }
 
+  // Financial Chatbot
+  Future<String> sendChatbotMessage(String message, int clientId) async {
+    final response = await post('chatbot', {
+      'message': message,
+      'client_id': clientId,
+    });
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['response'] ?? 'Sorry, I couldn\'t process your request.';
+    } else {
+      throw Exception('Failed to get chatbot response');
+    }
+  }
+
 }
 
