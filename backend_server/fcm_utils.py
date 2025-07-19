@@ -5,7 +5,7 @@ from google.auth.transport.requests import Request
 
 def send_fcm_v1_notification(token, title, body, data=None):
     
-    SERVICE_ACCOUNT_FILE = r"C:\Users\hp\Desktop\FlutterMane\Taxmate_Project\Taxmate_Project-my-new-branch\backend_server\test-f21bc-firebase-adminsdk-fbsvc-ac09f2676f.json"
+    SERVICE_ACCOUNT_FILE = r"C:\Users\hp\Desktop\FlutterMane\Taxmate_Project\Taxmate_Project\backend_server\test-f21bc-firebase-adminsdk-fbsvc-ac09f2676f.json"
     PROJECT_ID = "test-f21bc"
 
     credentials = service_account.Credentials.from_service_account_file(
