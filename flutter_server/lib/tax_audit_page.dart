@@ -49,12 +49,12 @@ class _TaxAuditPageState extends State<TaxAuditPage> {
         future: _futureCAs,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple[700]!),
                     strokeWidth: 3,
                   ),
                   SizedBox(height: 16),
@@ -211,8 +211,8 @@ class _TaxAuditPageState extends State<TaxAuditPage> {
                                     width: 56,
                                     height: 56,
                                     decoration: BoxDecoration(
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                      gradient: LinearGradient(
+                                        colors: [Colors.deepPurple[700]!, Colors.deepPurple[800]!],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
@@ -319,12 +319,15 @@ class _TaxAuditPageState extends State<TaxAuditPage> {
                 color: const Color(0xFF64748B),
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -337,6 +340,9 @@ class _TaxAuditPageState extends State<TaxAuditPage> {
               color: Color(0xFF1E293B),
               fontWeight: FontWeight.w600,
             ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+            softWrap: true,
           ),
         ],
       ),
@@ -344,10 +350,10 @@ class _TaxAuditPageState extends State<TaxAuditPage> {
   }
 
   String _getInitials(String name) {
-    List<String> names = name.split(' ');
-    if (names.length >= 2) {
+    List<String> names = name.trim().split(' ').where((n) => n.isNotEmpty).toList();
+    if (names.length >= 2 && names[0].isNotEmpty && names[1].isNotEmpty) {
       return '${names[0][0]}${names[1][0]}'.toUpperCase();
-    } else if (names.isNotEmpty) {
+    } else if (names.isNotEmpty && names[0].isNotEmpty) {
       return names[0][0].toUpperCase();
     }
     return 'CA';

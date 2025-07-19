@@ -2,12 +2,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'home_page.dart';
 import 'api_service.dart';
 import 'client_dashboard.dart';
 import 'ca_dashboard.dart';
 import 'blo_dashboard.dart';
+import 'fp_dashboard.dart';
 import 'admin.dart';
+import 'forgot_password_page.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
@@ -101,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
           'email': _emailController.text,
           'password': _passwordController.text,
         }),
-      );
+      ).timeout(const Duration(seconds: 60)); // Increased timeout to 60 seconds
 
       if (response.statusCode == 200) {
         try {
@@ -143,7 +146,11 @@ class _LoginPageState extends State<LoginPage> {
       }
     } on http.ClientException catch (e) {
       setState(() {
-        _errorMessage = 'Network error: ${e.message}';
+        _errorMessage = 'Network error: Cannot connect to server. Please check your internet connection.';
+      });
+    } on TimeoutException catch (e) {
+      setState(() {
+        _errorMessage = 'Connection timeout: Server is taking too long to respond.';
       });
     } on FormatException {
       setState(() {
@@ -151,12 +158,14 @@ class _LoginPageState extends State<LoginPage> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'An unexpected error occurred';
+        _errorMessage = 'Connection failed: ${e.toString()}';
       });
     } finally {
       setState(() => _isLoading = false);
     }
   }
+
+
 
   void _navigateBasedOnUserType(Map<String, dynamic> userData) {
     final ApiService apiService = ApiService(widget.apiBaseUrl);
@@ -226,6 +235,22 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(
             builder: (context) => BankLoanOfficerDashboard(
               officerId: userId,
+              fullName: fullName,
+              email: email,
+              dob: dob,
+              gender: gender,
+              userType: userType,
+              serviceProviderType: serviceProviderType,
+              apiService: apiService,
+            ),
+          ),
+        );
+      } else if (normalizedType == 'financial_planner') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FinancialPlannerDashboard(
+              plannerId: userId,
               fullName: fullName,
               email: email,
               dob: dob,
@@ -330,9 +355,28 @@ class _LoginPageState extends State<LoginPage> {
                   if (_errorMessage != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _errorMessage!.contains('successful') 
+                            ? Colors.green.withOpacity(0.1)
+                            : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _errorMessage!.contains('successful') 
+                              ? Colors.green 
+                              : Colors.red,
+                          ),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: _errorMessage!.contains('successful') 
+                              ? Colors.green[700] 
+                              : Colors.red[700],
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ),
                   Container(
@@ -411,13 +455,26 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 70),
+                  const SizedBox(height: 40),
 
                   // Forgot Password
-                  const Text(
-                    "Forgot Password?",
-                    style: TextStyle(
-                      color: Color.fromRGBO(155, 100, 255, 1),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ForgotPasswordPage(
+                            apiService: ApiService(widget.apiBaseUrl),
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Forgot Password?",
+                      style: TextStyle(
+                        color: Color.fromRGBO(155, 100, 255, 1),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

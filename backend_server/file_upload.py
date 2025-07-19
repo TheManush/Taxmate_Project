@@ -1,11 +1,6 @@
 from fastapi import APIRouter, File, UploadFile, Query, HTTPException
-from supabase import create_client, Client
 from fastapi.responses import JSONResponse
-# Replace with your actual credentials
-SUPABASE_URL = "https://alxtxsmnyjkbjcjhgsqu.supabase.co"
-SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFseHR4c21ueWprYmpjamhnc3F1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTcxODM4MywiZXhwIjoyMDY3Mjk0MzgzfQ.qAx_tLPW0uNQPYDPkQinPnVPF3ZXl2NQ-fnISFGykZk"
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+from supabase_client import supabase
 
 router = APIRouter()
 
@@ -15,7 +10,7 @@ async def upload_file(
     service_provider_id: int,
     file: UploadFile = File(...),
     doc_type: str = Query(..., description="Document type: NID, TIN, Salary Certificate, Bank Statement, Audit Report"),
-    service_type: str = Query("ca", description="Service type: ca or blo")
+    service_type: str = Query("ca", description="Service type: ca, blo, or fp")
 ):
     try:
         # Sanitize and format doc_type
@@ -24,6 +19,8 @@ async def upload_file(
         # Create file path based on service type
         if service_type.lower() == "blo":
             file_path = f"client{user_id}/blo{service_provider_id}/{sanitized_doc_type}.pdf"
+        elif service_type.lower() == "fp":
+            file_path = f"client{user_id}/fp{service_provider_id}/{sanitized_doc_type}.pdf"
         else:
             # Default to CA path for backward compatibility
             file_path = f"client{user_id}/ca{service_provider_id}/{sanitized_doc_type}.pdf"
@@ -60,7 +57,7 @@ def generate_download_url(
     user_id: int,
     service_provider_id: int,
     doc_type: str = Query(...),
-    service_type: str = Query("ca", description="Service type: ca or blo")
+    service_type: str = Query("ca", description="Service type: ca, blo, or fp")
 ):
     # Mapping user input to actual file names
     mapping = {
@@ -79,6 +76,8 @@ def generate_download_url(
     # Create file path based on service type
     if service_type.lower() == "blo":
         file_path = f"client{user_id}/blo{service_provider_id}/{file_name}.pdf"
+    elif service_type.lower() == "fp":
+        file_path = f"client{user_id}/fp{service_provider_id}/{file_name}.pdf"
     else:
         # Default to CA path for backward compatibility
         file_path = f"client{user_id}/ca{service_provider_id}/{file_name}.pdf"

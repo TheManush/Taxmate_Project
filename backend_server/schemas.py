@@ -58,6 +58,7 @@ class ServiceRequestCreate(BaseModel):
     client_id: int
     ca_id: Optional[int] = None
     blo_id: Optional[int] = None
+    fp_id: Optional[int] = None
 
 
 # For returning request data
@@ -66,6 +67,7 @@ class ServiceRequestOut(BaseModel):
     client_id: int
     ca_id: Optional[int] = None
     blo_id: Optional[int] = None
+    fp_id: Optional[int] = None
     status: Literal['pending', 'approved', 'rejected']
 
     class Config:
@@ -89,6 +91,102 @@ class ServiceRequestDetailedOut(BaseModel):
     client: UserShort
     ca: Optional[UserShort] = None
     blo: Optional[UserShort] = None
+    fp: Optional[UserShort] = None
+
+    class Config:
+        from_attributes = True
+
+class LoanRequestCreate(BaseModel):
+    blo_id: int
+    # Personal Info
+    full_name: str
+    date_of_birth: date
+    nid_number: str
+    phone_number: str
+    email: str
+    present_address: str
+    
+    # Business Info
+    employment_type: str
+    company_name: Optional[str] = None
+    designation: Optional[str] = None
+    monthly_income: float
+    length_of_employment: str
+    
+    # Loan Details
+    loan_type: str
+    requested_amount: float
+    loan_tenure: str
+    purpose_of_loan: str
+    preferred_bank: str
+    
+    # Additional Info (Optional)
+    guarantor_name: Optional[str] = None
+    guarantor_nid: Optional[str] = None
+    guarantor_phone: Optional[str] = None
+    collateral_info: Optional[str] = None
+    notes_remarks: Optional[str] = None
+
+class LoanRequestOut(BaseModel):
+    id: int
+    client_id: int
+    blo_id: int
+    # Personal Info
+    full_name: str
+    date_of_birth: date
+    nid_number: str
+    phone_number: str
+    email: str
+    present_address: str
+    
+    # Business Info
+    employment_type: str
+    company_name: Optional[str] = None
+    designation: Optional[str] = None
+    monthly_income: float
+    length_of_employment: str
+    
+    # Loan Details
+    loan_type: str
+    requested_amount: float
+    loan_tenure: str
+    purpose_of_loan: str
+    preferred_bank: str
+    
+    # Additional Info (Optional)
+    guarantor_name: Optional[str] = None
+    guarantor_nid: Optional[str] = None
+    guarantor_phone: Optional[str] = None
+    collateral_info: Optional[str] = None
+    notes_remarks: Optional[str] = None
+    
+    # Status and timestamps
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    
+    # Relationships
+    client: UserShort
+
+    class Config:
+        from_attributes = True
+
+class LoanStatusCreate(BaseModel):
+    status: str  # approved, rejected, pending, missing_info
+    message: Optional[str] = None
+
+class LoanStatusOut(BaseModel):
+    id: int
+    loan_request_id: int
+    client_id: int
+    blo_id: int
+    status: str
+    message: Optional[str] = None
+    updated_at: datetime
+    requested_amount: Optional[float] = None
+    purpose_of_loan: Optional[str] = None
+    preferred_bank: Optional[str] = None
+    loan_tenure: Optional[str] = None
 
     class Config:
         from_attributes = True

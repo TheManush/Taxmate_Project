@@ -35,7 +35,7 @@ class CAProfilePage extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Colors.green[800],
+        backgroundColor: Colors.deepPurple[500],
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -53,7 +53,7 @@ class CAProfilePage extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green[800]!, Colors.green[600]!],
+                  colors: [Colors.deepPurple[500]!, Colors.deepPurple[400]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -85,7 +85,7 @@ class CAProfilePage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green[800],
+                          color: Colors.deepPurple[800],
                         ),
                       ),
                     ),
@@ -262,12 +262,12 @@ class CAProfilePage extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.green[800]!.withOpacity(0.1),
+            color: Colors.deepPurple[800]!.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             icon,
-            color: Colors.green[800],
+            color: Colors.deepPurple[800],
             size: 20,
           ),
         ),

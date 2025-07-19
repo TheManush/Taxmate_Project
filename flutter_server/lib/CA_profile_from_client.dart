@@ -26,12 +26,12 @@ class _CA_profileState extends State<CA_profile> {
   @override
   void initState() {
     super.initState();
-    _requestFuture = widget.apiService.checkExistingRequest(widget.clientId, widget.caData['id'],null);
+    _requestFuture = widget.apiService.checkExistingRequest(widget.clientId, widget.caData['id'], null, null);
   }
 
   void refreshRequestStatus() {
     setState(() {
-      _requestFuture = widget.apiService.checkExistingRequest(widget.clientId, widget.caData['id'],null);
+      _requestFuture = widget.apiService.checkExistingRequest(widget.clientId, widget.caData['id'], null, null);
     });
   }
 
@@ -74,15 +74,15 @@ class _CA_profileState extends State<CA_profile> {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                      gradient: LinearGradient(
+                        colors: [Colors.deepPurple[700]!, Colors.deepPurple[800]!],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF3B82F6).withOpacity(0.3),
+                          color: Colors.deepPurple[700]!.withOpacity(0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -165,9 +165,9 @@ class _CA_profileState extends State<CA_profile> {
                           ),
                         ],
                       ),
-                      child: const Center(
+                      child: Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple[700]!),
                           strokeWidth: 3,
                         ),
                       ),
@@ -247,6 +247,7 @@ class _CA_profileState extends State<CA_profile> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -281,6 +282,9 @@ class _CA_profileState extends State<CA_profile> {
                     color: Color(0xFF1E293B),
                     fontWeight: FontWeight.w600,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
+                  softWrap: true,
                 ),
               ],
             ),
@@ -357,7 +361,7 @@ class _CA_profileState extends State<CA_profile> {
           }
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF3B82F6),
+          backgroundColor: Colors.deepPurple[700],
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -385,20 +389,23 @@ class _CA_profileState extends State<CA_profile> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFD97706).withOpacity(0.3)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.hourglass_empty,
             color: Color(0xFFD97706),
             size: 24,
           ),
-          SizedBox(width: 12),
-          Text(
-            'Request Pending Approval',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFFD97706),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              'Request Pending Approval',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFD97706),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -419,20 +426,23 @@ class _CA_profileState extends State<CA_profile> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.check_circle_outline,
                 color: Color(0xFF10B981),
                 size: 24,
               ),
-              SizedBox(width: 12),
-              Text(
-                'Request Approved',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF10B981),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  'Request Approved',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF10B981),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -465,8 +475,8 @@ class _CA_profileState extends State<CA_profile> {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: Colors.deepPurple[700],
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -495,18 +505,18 @@ class _CA_profileState extends State<CA_profile> {
                     ),
                   );
                 },
-                icon: const Icon(Icons.chat_outlined, color: Color(0xFF3B82F6)),
+                icon: const Icon(Icons.chat_outlined, color: Colors.deepPurple),
                 label: const Text(
                   'Chat',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF3B82F6),
+                    color: Colors.deepPurple,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF3B82F6)),
+                  side: const BorderSide(color: Colors.deepPurple),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -594,10 +604,10 @@ class _CA_profileState extends State<CA_profile> {
   }
 
   String _getInitials(String name) {
-    List<String> names = name.split(' ');
-    if (names.length >= 2) {
+    List<String> names = name.trim().split(' ').where((n) => n.isNotEmpty).toList();
+    if (names.length >= 2 && names[0].isNotEmpty && names[1].isNotEmpty) {
       return '${names[0][0]}${names[1][0]}'.toUpperCase();
-    } else if (names.isNotEmpty) {
+    } else if (names.isNotEmpty && names[0].isNotEmpty) {
       return names[0][0].toUpperCase();
     }
     return 'CA';

@@ -6,6 +6,8 @@ import 'client_dashboard.dart';
 import 'admin.dart';
 import 'ca_dashboard.dart';
 import 'blo_dashboard.dart';
+import 'fp_dashboard.dart';
+import 'reset_password_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_notifications.dart';
@@ -25,8 +27,10 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   final FlutterSecureStorage storage;
-  final String apiBaseUrl = 'http://192.168.0.101:8000';
- // final String apiBaseUrl = 'http://10.0.2.2:8000';
+  //final String apiBaseUrl = 'http://192.168.49.102:8000';
+  //final String apiBaseUrl = 'http://10.0.2.2:8000';  // Use this for Android emulator
+  final String apiBaseUrl = 'http://10.98.204.246:8000';  // Your confirmed IP address
+  //final String apiBaseUrl = 'http://localhost:8000';  // For web debugging
   const MyApp({super.key, required this.storage});
 
   Future<Widget> _determineStartScreen() async {
@@ -90,6 +94,17 @@ class MyApp extends StatelessWidget {
             serviceProviderType: serviceProviderType,
             apiService: apiService,
           );
+        } else if (normalized == 'financial_planner') {
+          return FinancialPlannerDashboard(
+            plannerId: userId,
+            fullName: fullName,
+            email: email,
+            dob: dob ?? '',
+            gender: gender ?? '',
+            userType: userType,
+            serviceProviderType: serviceProviderType,
+            apiService: apiService,
+          );
         }
       }
     }
@@ -107,6 +122,24 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
+      // Add route handling for password reset
+      onGenerateRoute: (settings) {
+        final uri = Uri.parse(settings.name ?? '');
+        
+        // Handle password reset route
+        if (uri.path == '/reset-password' && uri.queryParameters.containsKey('token')) {
+          final token = uri.queryParameters['token']!;
+          return MaterialPageRoute(
+            builder: (context) => ResetPasswordPage(
+              apiService: ApiService(apiBaseUrl),
+              resetToken: token,
+            ),
+          );
+        }
+        
+        // Default route
+        return null;
+      },
       home: FutureBuilder<Widget>(
         future: _determineStartScreen(),
         builder: (context, snapshot) {

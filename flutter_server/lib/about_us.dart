@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -112,20 +113,13 @@ class AboutUsPage extends StatelessWidget {
             color: Colors.white,
           ),
         ),
-        backgroundColor: const Color.fromRGBO(130, 80, 220, 1),
+        backgroundColor: const Color(0xFF6366F1),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.fromRGBO(130, 80, 220, 1),
-              Color.fromRGBO(155, 100, 255, 1),
-            ],
-          ),
+        decoration: BoxDecoration(
+          color: Color(0xFF6366F1),
         ),
         child: SafeArea(
           child: Padding(
@@ -153,28 +147,28 @@ class AboutUsPage extends StatelessWidget {
                         context: context,
                         name: "Ahnaf",
                         email: "ahnaf@example.com",
-                        imagePath: "assets/images/nah_id_win.jpg",
+                        imagePath: "assets/images/Ahnaf.jpg",
                       ),
                       const SizedBox(height: 15),
                       _buildDeveloperCard(
                         context: context,
                         name: "Sakafy",
                         email: "sakafy@example.com",
-                        imagePath: "assets/images/nah_id_win.jpg",
+                        imagePath: "assets/images/Sakafy.jpg",
                       ),
                       const SizedBox(height: 15),
                       _buildDeveloperCard(
                         context: context,
                         name: "Rabbani",
                         email: "rabbani@example.com",
-                        imagePath: "assets/images/nah_id_win.jpg",
+                        imagePath: "assets/images/Farhan.jpg",
                       ),
                       const SizedBox(height: 15),
                       _buildDeveloperCard(
                         context: context,
                         name: "Arafat",
                         email: "arafat@example.com",
-                        imagePath: "assets/images/nah_id_win.jpg",
+                        imagePath: "assets/images/Arafat.jpg",
                       ),
                     ],
                   ),

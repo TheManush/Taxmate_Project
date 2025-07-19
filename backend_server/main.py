@@ -1,4 +1,3 @@
-
 # Standard library imports
 from datetime import date, datetime
 from typing import Optional, List
@@ -9,15 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import uvicorn
 from passlib.context import CryptContext
-
-# Local app imports
 import models, schemas, crud
 from database import SessionLocal, engine, get_db
-from models import User, ServiceRequest
-from schemas import UserOut, UserShort, ServiceRequestCreate, ServiceRequestOut
+from models import User, ServiceRequest, LoanRequest, LoanStatus
+from schemas import UserOut, UserShort, ServiceRequestCreate, ServiceRequestOut, LoanRequestCreate, LoanRequestOut, LoanStatusCreate, LoanStatusOut
 from file_upload import router as upload_router
 from chat1 import chat_router
+from password_router import password_router
 from fcm_utils import send_fcm_v1_notification
+from financial_report import router as financial_report_router
+from simple_chatbot import AdvancedFinancialChatbot
 
 # Create tables
 models.Base.metadata.create_all(bind=engine)
@@ -26,6 +26,12 @@ app = FastAPI()
 
 app.include_router(upload_router)
 app.include_router(chat_router)
+app.include_router(password_router)
+app.include_router(financial_report_router)
+
+# Initialize the financial chatbot
+financial_chatbot = AdvancedFinancialChatbot()
+
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -145,6 +151,14 @@ def get_bank_loan_officers(db: Session = Depends(get_db)):
     ).all()
     return blo_users
 
+@app.get("/financial_planners/", response_model=List[UserOut])
+def get_financial_planners(db: Session = Depends(get_db)):
+    fp_users = db.query(User).filter(
+        User.user_type == "service_provider",
+        User.service_provider_type.ilike("financial planner")
+    ).all()
+    return fp_users
+
 from sqlalchemy.orm import selectinload
 from schemas import ServiceRequestUpdate, ServiceRequestDetailedOut
 
@@ -152,18 +166,21 @@ from schemas import ServiceRequestUpdate, ServiceRequestDetailedOut
 def create_service_request(request: ServiceRequestCreate, db: Session = Depends(get_db)):
     try:
         print(f"DEBUG: Creating service request with data: {request}")
-        print(f"DEBUG: ca_id={request.ca_id}, blo_id={request.blo_id}, client_id={request.client_id}")
+        print(f"DEBUG: ca_id={request.ca_id}, blo_id={request.blo_id}, fp_id={request.fp_id}, client_id={request.client_id}")
         
-        # Validate that either ca_id or blo_id is provided, but not both
-        if not request.ca_id and not request.blo_id:
-            print("DEBUG: Neither CA ID nor BLO ID provided")
-            raise HTTPException(status_code=400, detail="Either CA ID or BLO ID must be provided")
+        # Validate that exactly one service provider is provided
+        service_providers = [request.ca_id, request.blo_id, request.fp_id]
+        non_null_providers = [sp for sp in service_providers if sp is not None]
         
-        if request.ca_id and request.blo_id:
-            print("DEBUG: Both CA ID and BLO ID provided")
-            raise HTTPException(status_code=400, detail="Cannot request both CA and BLO services simultaneously")
+        if len(non_null_providers) == 0:
+            print("DEBUG: No service provider ID provided")
+            raise HTTPException(status_code=400, detail="One service provider ID must be provided (CA, BLO, or FP)")
+        
+        if len(non_null_providers) > 1:
+            print("DEBUG: Multiple service provider IDs provided")
+            raise HTTPException(status_code=400, detail="Cannot request multiple service providers simultaneously")
     
-        # Handle CA requests (original functionality)
+        # Handle CA requests
         if request.ca_id:
             print(f"DEBUG: Processing CA request for CA ID: {request.ca_id}")
             ca_user = db.query(User).filter(
@@ -185,7 +202,7 @@ def create_service_request(request: ServiceRequestCreate, db: Session = Depends(
                 print(f"DEBUG: CA request already exists for client {request.client_id}")
                 raise HTTPException(status_code=400, detail="Request already sent")
         
-        # Handle BLO requests (new functionality)
+        # Handle BLO requests
         if request.blo_id:
             print(f"DEBUG: Processing BLO request for BLO ID: {request.blo_id}")
             blo_user = db.query(User).filter(
@@ -207,11 +224,34 @@ def create_service_request(request: ServiceRequestCreate, db: Session = Depends(
                 print(f"DEBUG: BLO request already exists for client {request.client_id}")
                 raise HTTPException(status_code=400, detail="Request already sent")
 
+        # Handle FP requests
+        if request.fp_id:
+            print(f"DEBUG: Processing FP request for FP ID: {request.fp_id}")
+            fp_user = db.query(User).filter(
+                User.id == request.fp_id,
+                User.user_type == "service_provider",
+                User.service_provider_type.ilike("financial planner")
+            ).first()
+            if not fp_user:
+                print(f"DEBUG: FP user not found for ID: {request.fp_id}")
+                raise HTTPException(status_code=404, detail="Financial Planner not found")
+            
+            # Check for existing FP request
+            existing = db.query(ServiceRequest).filter_by(
+                client_id=request.client_id,
+                fp_id=request.fp_id,
+                status="pending"
+            ).first()
+            if existing:
+                print(f"DEBUG: FP request already exists for client {request.client_id}")
+                raise HTTPException(status_code=400, detail="Request already sent")
+
         print(f"DEBUG: Creating new ServiceRequest object")
         new_request = ServiceRequest(
             client_id=request.client_id,
             ca_id=request.ca_id,
             blo_id=request.blo_id,
+            fp_id=request.fp_id,
             status="pending"
         )
         print(f"DEBUG: Adding to database")
@@ -244,7 +284,8 @@ def update_request_status(request_id: int, update: ServiceRequestUpdate, db: Ses
 @app.get("/ca/{ca_id}/requests", response_model=List[ServiceRequestDetailedOut])
 def get_requests_for_ca(ca_id: int, db: Session = Depends(get_db)):
     requests = db.query(ServiceRequest).filter(
-        ServiceRequest.ca_id == ca_id
+        ServiceRequest.ca_id == ca_id,
+        ServiceRequest.ca_id.isnot(None)
     ).options(
         selectinload(ServiceRequest.client),
         selectinload(ServiceRequest.ca)
@@ -254,10 +295,22 @@ def get_requests_for_ca(ca_id: int, db: Session = Depends(get_db)):
 @app.get("/bank_loan_officer/{blo_id}/requests", response_model=List[ServiceRequestDetailedOut])
 def get_requests_for_blo(blo_id: int, db: Session = Depends(get_db)):
     requests = db.query(ServiceRequest).filter(
-        ServiceRequest.blo_id == blo_id
+        ServiceRequest.blo_id == blo_id,
+        ServiceRequest.blo_id.isnot(None)
     ).options(
         selectinload(ServiceRequest.client),
         selectinload(ServiceRequest.blo)
+    ).all()
+    return requests
+
+@app.get("/financial_planner/{fp_id}/requests", response_model=List[ServiceRequestDetailedOut])
+def get_requests_for_fp(fp_id: int, db: Session = Depends(get_db)):
+    requests = db.query(ServiceRequest).filter(
+        ServiceRequest.fp_id == fp_id,
+        ServiceRequest.fp_id.isnot(None)
+    ).options(
+        selectinload(ServiceRequest.client),
+        selectinload(ServiceRequest.fp)
     ).all()
     return requests
 
@@ -267,13 +320,14 @@ def get_requests_for_client(client_id: int, db: Session = Depends(get_db)):
         requests = db.query(ServiceRequest).filter_by(client_id=client_id).options(
             selectinload(ServiceRequest.ca),
             selectinload(ServiceRequest.blo),
+            selectinload(ServiceRequest.fp),
             selectinload(ServiceRequest.client)
         ).all()
         
         # Debug: Print what we're returning
         print(f"Found {len(requests)} requests for client {client_id}")
         for req in requests:
-            print(f"Request {req.id}: ca_id={req.ca_id}, blo_id={req.blo_id}, status={req.status}")
+            print(f"Request {req.id}: ca_id={req.ca_id}, blo_id={req.blo_id}, fp_id={req.fp_id}, status={req.status}")
             
         return requests
     except Exception as e:
@@ -298,6 +352,20 @@ def get_approved_clients_for_ca(ca_id: int, db: Session = Depends(get_db)):
 def get_approved_clients_for_blo(blo_id: int, db: Session = Depends(get_db)):
     approved_requests = db.query(ServiceRequest).filter(
         ServiceRequest.blo_id == blo_id,
+        ServiceRequest.status == "approved"
+    ).all()
+    
+    client_ids = [req.client_id for req in approved_requests]
+    if not client_ids:
+        return []
+
+    clients = db.query(User).filter(User.id.in_(client_ids)).all()
+    return clients
+
+@app.get("/financial_planner/{fp_id}/approved_clients", response_model=List[UserShort])
+def get_approved_clients_for_fp(fp_id: int, db: Session = Depends(get_db)):
+    approved_requests = db.query(ServiceRequest).filter(
+        ServiceRequest.fp_id == fp_id,
         ServiceRequest.status == "approved"
     ).all()
     
@@ -351,6 +419,181 @@ def reject_user(user_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": f"{user.full_name} has been rejected and removed."}
 
+
+# Loan Request Endpoints
+@app.post("/loan_requests/", response_model=LoanRequestOut, status_code=status.HTTP_201_CREATED)
+def create_loan_request(client_id: int, loan_request: LoanRequestCreate, db: Session = Depends(get_db)):
+    # Check if client exists
+    client = db.query(User).filter(User.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Check if BLO exists
+    blo = db.query(User).filter(User.id == loan_request.blo_id).first()
+    if not blo:
+        raise HTTPException(status_code=404, detail="Bank Loan Officer not found")
+    
+    # Create loan request
+    db_loan_request = LoanRequest(
+        client_id=client_id,
+        **loan_request.dict()
+    )
+    db.add(db_loan_request)
+    db.commit()
+    db.refresh(db_loan_request)
+    
+    return db_loan_request
+
+@app.get("/blo/{blo_id}/loan_requests", response_model=List[LoanRequestOut])
+def get_loan_requests_for_blo(blo_id: int, db: Session = Depends(get_db)):
+    # Check if BLO exists
+    blo = db.query(User).filter(User.id == blo_id).first()
+    if not blo:
+        raise HTTPException(status_code=404, detail="Bank Loan Officer not found")
+    
+    # Get loan requests for this BLO
+    loan_requests = db.query(LoanRequest).filter(LoanRequest.blo_id == blo_id).all()
+    return loan_requests
+
+@app.get("/loan_requests/{loan_request_id}", response_model=LoanRequestOut)
+def get_loan_request(loan_request_id: int, db: Session = Depends(get_db)):
+    loan_request = db.query(LoanRequest).filter(LoanRequest.id == loan_request_id).first()
+    if not loan_request:
+        raise HTTPException(status_code=404, detail="Loan request not found")
+    return loan_request
+
+# Loan Status Endpoints
+
+@app.post("/loan_requests/{loan_request_id}/status")
+def update_loan_status(
+    loan_request_id: int, 
+    status_data: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    # Check if loan request exists
+    loan_request = db.query(LoanRequest).filter(LoanRequest.id == loan_request_id).first()
+    if not loan_request:
+        raise HTTPException(status_code=404, detail="Loan request not found")
+    
+    # Create or update loan status
+    existing_status = db.query(models.LoanStatus).filter(
+        models.LoanStatus.loan_request_id == loan_request_id
+    ).first()
+    
+    if existing_status:
+        # Update existing status
+        existing_status.status = status_data.get('status')
+        existing_status.message = status_data.get('message')
+        existing_status.updated_at = datetime.now()
+    else:
+        # Create new status record
+        loan_status = models.LoanStatus(
+            loan_request_id=loan_request_id,
+            client_id=loan_request.client_id,
+            blo_id=loan_request.blo_id,
+            status=status_data.get('status'),
+            message=status_data.get('message'),
+            requested_amount=loan_request.requested_amount,
+            purpose_of_loan=loan_request.purpose_of_loan,
+            preferred_bank=loan_request.preferred_bank,
+            loan_tenure=loan_request.loan_tenure,
+            updated_at=datetime.now()
+        )
+        db.add(loan_status)
+    
+    db.commit()
+    return {"message": "Loan status updated successfully"}
+
+@app.get("/loan_status")
+def get_loan_status(client_id: int, blo_id: int, db: Session = Depends(get_db)):
+    loan_status = db.query(models.LoanStatus).filter(
+        models.LoanStatus.client_id == client_id,
+        models.LoanStatus.blo_id == blo_id
+    ).order_by(models.LoanStatus.updated_at.desc()).first()
+    
+    if not loan_status:
+        raise HTTPException(status_code=404, detail="No loan status found")
+    
+    # Get additional loan request details
+    loan_request = db.query(LoanRequest).filter(LoanRequest.id == loan_status.loan_request_id).first()
+    client = db.query(User).filter(User.id == client_id).first()
+    blo = db.query(User).filter(User.id == blo_id).first()
+    
+    # Create response with complete information
+    response = {
+        "id": loan_status.id,
+        "loan_request_id": loan_status.loan_request_id,
+        "client_id": loan_status.client_id,
+        "blo_id": loan_status.blo_id,
+        "status": loan_status.status,
+        "message": loan_status.message,
+        "updated_at": loan_status.updated_at,
+        "requested_amount": loan_status.requested_amount or (loan_request.requested_amount if loan_request else None),
+        "purpose_of_loan": loan_status.purpose_of_loan or (loan_request.purpose_of_loan if loan_request else None),
+        "preferred_bank": loan_status.preferred_bank or (loan_request.preferred_bank if loan_request else None),
+        "loan_tenure": loan_status.loan_tenure or (loan_request.loan_tenure if loan_request else None),
+        "client_name": client.full_name if client else None,
+        "blo_name": blo.full_name if blo else None,
+    }
+    
+    return response
+
+# Financial Data Endpoints
+from financial_crud import (
+    create_or_update_financial_data, 
+    get_financial_data, 
+    calculate_financial_summary
+)
+from financial_schemas import FinancialDataCreate, FinancialDataOut, FinancialSummary
+
+@app.post("/financial-data/{client_id}")
+def save_financial_data(client_id: int, financial_data: FinancialDataCreate):
+    try:
+        result = create_or_update_financial_data(client_id, financial_data.dict())
+        if result:
+            return {"message": "Financial data saved successfully", "data": result}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save financial data")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/financial-data/{client_id}")
+def get_financial_data_endpoint(client_id: int):
+    try:
+        data = get_financial_data(client_id)
+        if data:
+            return data
+        else:
+            raise HTTPException(status_code=404, detail="No financial data found for this client")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/financial-summary/{client_id}")
+def get_financial_summary(client_id: int):
+    try:
+        data = get_financial_data(client_id)
+        if not data:
+            raise HTTPException(status_code=404, detail="No financial data found for this client")
+        
+        summary = calculate_financial_summary(data)
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chatbot")
+def chat_with_financial_assistant(
+    message: str = Body(..., embed=True),
+    client_id: int = Body(..., embed=True)
+):
+    """
+    Financial chatbot endpoint that provides personalized financial advice.
+    """
+    try:
+        # Generate response using the chatbot
+        response = financial_chatbot.generate_response(message, client_id)
+        return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chatbot error: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -3,9 +3,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_service.dart';
 import 'tax_audit_page.dart';
 import 'bank_loan_page.dart';
-import 'financial_planning_page.dart';
+import 'enhanced_financial_planning_page.dart';
 import 'client_profile_page.dart';
-import 'landing_page.dart'; // <-- import your LandingPage here
+import 'landing_page.dart';
 
 class ClientDashboard extends StatefulWidget {
   final int clientId;
@@ -52,7 +52,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text('Dashboard', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: Colors.deepPurple[700],
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -73,9 +73,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(30),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+                  colors: [Colors.deepPurple[700]!, Colors.deepPurple[600]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -159,7 +159,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const FinancialPlanningPage(),
+                          builder: (context) => EnhancedFinancialPlanningPage(
+                            apiService: apiService,
+                            clientId: clientId,
+                          ),
                         ),
                       );
                     },
@@ -181,55 +184,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
                   ),
 
                   const SizedBox(height: 30),
-
-                  // Quick Actions
-                  const Text(
-                    'Quick Actions',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          icon: Icons.person_outline,
-                          title: 'My Profile',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ClientProfilePage(
-                                  clientId: clientId,
-                                  fullName: fullName,
-                                  email: email,
-                                  dob: dob,
-                                  gender: gender,
-                                  userType: userType,
-                                  clientType: clientType,
-                                  apiService: apiService,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          icon: Icons.help_outline,
-                          title: 'Help & Support',
-                          onTap: () {
-                            // Handle help & support
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -244,9 +198,9 @@ class _ClientDashboardState extends State<ClientDashboard> {
       child: Column(
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+                colors: [Colors.deepPurple[700]!, Colors.deepPurple[600]!],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -266,7 +220,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E40AF),
+                  color: Colors.deepPurple,
                 ),
               ),
             ),
@@ -330,7 +284,10 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const FinancialPlanningPage(),
+                        builder: (context) =>  EnhancedFinancialPlanningPage(
+                          apiService: apiService,
+                          clientId: clientId,
+                        ),
                       ),
                     );
                   },
@@ -350,31 +307,17 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 const Divider(height: 30),
                 _buildDrawerItem(
                   context,
-                  Icons.settings_outlined,
-                  'Settings',
-                      () => Navigator.pop(context),
-                ),
-                _buildDrawerItem(
-                  context,
-                  Icons.help_outline,
-                  'Help & Support',
-                      () => Navigator.pop(context),
+                  Icons.logout_outlined,
+                  'Logout',
+                      () {
+                    Navigator.pop(context);
+                    _showLogoutDialog(context);
+                  },
+                  isLogout: true,
                 ),
               ],
             ),
           ),
-          const Divider(),
-          _buildDrawerItem(
-            context,
-            Icons.logout_outlined,
-            'Logout',
-                () {
-              Navigator.pop(context);
-              _showLogoutDialog(context);
-            },
-            isLogout: true,
-          ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -465,38 +408,6 @@ class _ClientDashboardState extends State<ClientDashboard> {
                 fontSize: 14,
                 color: Colors.grey[600],
                 height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: const Color(0xFF6B7280), size: 28),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1F2937),
               ),
             ),
           ],

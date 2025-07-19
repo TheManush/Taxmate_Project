@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'client_page_from_CA.dart';
@@ -53,7 +54,7 @@ class _CAdashboardState extends State<CAdashboard> {
       appBar: AppBar(
         title: Text(
             '${widget.serviceProviderType ?? 'Service Provider'} Dashboard'),
-        backgroundColor: Colors.green[800],
+        backgroundColor: Colors.deepPurple[500],
         elevation: 0,
         actions: [
           IconButton(
@@ -73,7 +74,7 @@ class _CAdashboardState extends State<CAdashboard> {
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.green[800]!, Colors.green[600]!],
+                  colors: [Colors.deepPurple[500]!, Colors.deepPurple[400]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -103,29 +104,47 @@ class _CAdashboardState extends State<CAdashboard> {
 
             // Main Content - Removed Profile Card
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Client Requests',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      Row(
-                        children: [
-                          const Text("Only Pending"),
-                          Switch(
-                            value: _showOnlyPending,
-                            onChanged: (val) {
-                              setState(() {
-                                _showOnlyPending = val;
-                              });
-                            },
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          'Client Requests',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text("Only Pending", 
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: _showOnlyPending,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _showOnlyPending = val;
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -154,47 +173,148 @@ class _CAdashboardState extends State<CAdashboard> {
 
         List<Map<String, dynamic>> requests = List.from(snapshot.data!);
         if (_showOnlyPending) {
-          requests =
-              requests.where((req) => req['status'] == 'pending').toList();
+          requests = requests.where((req) => req['status'] == 'pending').toList();
         }
         if (requests.isEmpty) {
           return const Text('No matching requests to display.');
         }
+
         return Column(
           children: requests.map((req) {
             return Card(
-              child: ListTile(
-                title: Text('Client: ${req['client']['full_name']}'),
-                subtitle: Text('Status: ${req['status']}'),
-                trailing: req['status'] == 'pending'
-                    ? Row(
-                  mainAxisSize: MainAxisSize.min,
+              elevation: 3,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.check, color: Colors.green),
-                      onPressed: () async {
-                        await widget.apiService.updateRequestStatus(
-                            req['id'], 'approved');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Request accepted')),
-                        );
-                        _fetchRequests();
-                      },
+                    Row(
+                      children: [
+                        // Client Avatar
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.deepPurple[500],
+                          child: Text(
+                            (req['client']['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Client Name and Status
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                req['client']['full_name'],
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                req['client']['email'] ?? '',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Status
+                        Expanded(
+                          flex: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: req['status'] == 'pending'
+                                  ? Colors.orange[100]
+                                  : req['status'] == 'approved'
+                                      ? Colors.green[100]
+                                      : Colors.red[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              req['status'].toString().toUpperCase(),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: req['status'] == 'pending'
+                                    ? Colors.orange[700]
+                                    : req['status'] == 'approved'
+                                        ? Colors.green[700]
+                                        : Colors.red[700],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close, color: Colors.red),
-                      onPressed: () async {
-                        await widget.apiService.updateRequestStatus(
-                            req['id'], 'rejected');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Request rejected')),
-                        );
-                        _fetchRequests();
-                      },
-                    ),
+                    // Action Buttons for Pending Requests
+                    if (req['status'] == 'pending') ...[
+                      const SizedBox(height: 12),
+                      const Divider(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await widget.apiService.updateRequestStatus(
+                                    req['id'], 'approved');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Request accepted')),
+                                );
+                                _fetchRequests();
+                              },
+                              icon: const Icon(Icons.check, size: 16),
+                              label: const Text('Accept', style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green[600],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await widget.apiService.updateRequestStatus(
+                                    req['id'], 'rejected');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Request rejected')),
+                                );
+                                _fetchRequests();
+                              },
+                              icon: const Icon(Icons.close, size: 16),
+                              label: const Text('Reject', style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red[600],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                )
-                    : null,
+                ),
               ),
             );
           }).toList(),
@@ -214,7 +334,7 @@ class _CAdashboardState extends State<CAdashboard> {
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.green[800]!, Colors.green[600]!],
+                colors: [Colors.deepPurple[500]!, Colors.deepPurple[400]!],
               ),
             ),
             accountName: Text(widget.fullName),
@@ -225,16 +345,43 @@ class _CAdashboardState extends State<CAdashboard> {
                 _getFirstName()[0],
                 style: TextStyle(
                   fontSize: 24,
-                  color: Colors.green[800],
+                  color: Colors.deepPurple[500],
                 ),
               ),
             ),
           ),
 
-          // 👉 Profile option added to drawer
+          // 👉 Pending Requests (current page)
+          ListTile(
+            leading: const Icon(Icons.pending_actions),
+            title: const Text("Pending Requests", style: TextStyle(fontWeight: FontWeight.bold)),
+            selected: true, // Highlights the current page
+            onTap: () {
+              Navigator.pop(context); // Just close drawer
+            },
+          ),
+
+          // 👉 Clients (navigates to new page)
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: const Text("Clients", style: TextStyle(fontWeight: FontWeight.bold)),
+            onTap: () {
+              Navigator.of(context).pop(); // Close the drawer
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ClientsPage(
+                    caId: widget.caId,
+                    apiService: widget.apiService,
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // 👉 My Profile (navigates to profile page)
           ListTile(
             leading: const Icon(Icons.person),
-            title: const Text("My Profile"),
+            title: const Text("My Profile", style: TextStyle(fontWeight: FontWeight.bold)),
             onTap: () {
               Navigator.of(context).pop(); // Close the drawer
               Navigator.of(context).push(
@@ -254,40 +401,12 @@ class _CAdashboardState extends State<CAdashboard> {
             },
           ),
 
-          // 👉 Pending Requests (current page)
-          ListTile(
-            leading: const Icon(Icons.pending_actions),
-            title: const Text("Pending Requests"),
-            selected: true, // Highlights the current page
-            onTap: () {
-              Navigator.pop(context); // Just close drawer
-            },
-          ),
-
-          // 👉 Clients (navigates to new page)
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text("Clients"),
-            onTap: () {
-              Navigator.of(context).pop(); // Close the drawer
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => ClientsPage(
-                    caId: widget.caId,
-                    apiService: widget.apiService,
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const Spacer(),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text(
               "Logout",
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
             onTap: () async {
               final shouldLogout = await showDialog<bool>(

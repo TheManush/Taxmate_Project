@@ -26,7 +26,9 @@ class _ClientsPageFromBLOState extends State<ClientsPageFromBLO> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Approved Clients"),
-        backgroundColor: Colors.blueGrey[900],
+        backgroundColor: Colors.deepPurple[700],
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _clientsFuture,
@@ -40,72 +42,128 @@ class _ClientsPageFromBLOState extends State<ClientsPageFromBLO> {
           }
 
           final clients = snapshot.data!;
-          return ListView.builder(
-            itemCount: clients.length,
-            itemBuilder: (context, index) {
-              final client = clients[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FileDownloadBLOPage(
-                          clientId: client['id'],
-                          bloId: widget.officerId,
-                          clientName: client['full_name'],
-                          apiService: widget.apiService,
-                        ),
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: ListView.builder(
+              itemCount: clients.length,
+              itemBuilder: (context, index) {
+                final client = clients[index];
+                return Card(
+                  elevation: 6,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white,
+                          Colors.deepPurple[50]!,
+                        ],
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const CircleAvatar(
-                          backgroundColor: Colors.blueGrey,
-                          child: Icon(Icons.person, color: Colors.white),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          // Profile Header Row
+                          Row(
                             children: [
-                              Text(
-                                client['full_name'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              // Profile Avatar
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundColor: Colors.deepPurple[700],
+                                child: Text(
+                                  (client['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                client['email'],
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Client ID: ${client['id']}',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontSize: 12,
+                              const SizedBox(width: 16),
+                              // Name and Email
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      client['full_name'],
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[800],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.email,
+                                          size: 16,
+                                          color: Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            client['email'],
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const Icon(Icons.chevron_right),
-                      ],
+                          const SizedBox(height: 16),
+                          // Check Files Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FileDownloadBLOPage(
+                                      clientId: client['id'],
+                                      bloId: widget.officerId,
+                                      clientName: client['full_name'],
+                                      clientEmail: client['email'],
+                                      apiService: widget.apiService,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.folder_open, size: 18),
+                              label: const Text('Check Files'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple[700],
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),

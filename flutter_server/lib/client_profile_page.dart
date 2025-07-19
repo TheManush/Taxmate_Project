@@ -35,7 +35,7 @@ class ClientProfilePage extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: const Color(0xFF7C3AED),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -53,7 +53,7 @@ class ClientProfilePage extends StatelessWidget {
               ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF1E40AF), Color(0xFF3B82F6)],
+                  colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -85,7 +85,7 @@ class ClientProfilePage extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E40AF),
+                          color: Color(0xFF7C3AED),
                         ),
                       ),
                     ),

@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import 'package:http_parser/http_parser.dart';
 class ApiService {
   final String baseUrl;
@@ -12,8 +13,12 @@ class ApiService {
         Uri.parse('$baseUrl/$endpoint'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(data),
-      );
+      ).timeout(const Duration(seconds: 60));
       return response;
+    } on TimeoutException catch (e) {
+      throw Exception('Connection timeout: Server is not responding');
+    } on http.ClientException catch (e) {
+      throw Exception('Network error: Cannot connect to server');
     } catch (e) {
       throw Exception('Failed to connect to server: ${e.toString()}');
     }
@@ -29,8 +34,12 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/$endpoint'),
         headers: headers,
-      );
+      ).timeout(const Duration(seconds: 60));
       return response;
+    } on TimeoutException catch (e) {
+      throw Exception('Connection timeout: Server is not responding');
+    } on http.ClientException catch (e) {
+      throw Exception('Network error: Cannot connect to server');
     } catch (e) {
       throw Exception('Failed to connect to server: ${e.toString()}');
     }
@@ -89,11 +98,13 @@ class ApiService {
     required int clientId,
     int? caId,
     int? bloId,
+    int? fpId,
   }) async {
     final Map<String, dynamic> requestData = {
       'client_id': clientId,
-      if (caId != null) 'ca_id': caId,
-      if (bloId != null) 'blo_id': bloId,
+      'ca_id': caId,
+      'blo_id': bloId,
+      'fp_id': fpId,
     };
 
     final response = await http.post(
@@ -109,7 +120,7 @@ class ApiService {
       throw Exception(error['detail'] ?? 'Failed to send request');
     }
   }
-  Future<Map<String, dynamic>?> checkExistingRequest(int clientId, int? caId, int? bloId) async {
+  Future<Map<String, dynamic>?> checkExistingRequest(int clientId, int? caId, int? bloId, int? fpId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/client/$clientId/requests'),
@@ -128,6 +139,10 @@ class ApiService {
           }
           // Check for BLO request
           if (bloId != null && request['blo'] != null && request['blo']['id'] == bloId) {
+            return request;
+          }
+          // Check for FP request
+          if (fpId != null && request['fp'] != null && request['fp']['id'] == fpId) {
             return request;
           }
         }
@@ -324,17 +339,159 @@ class ApiService {
     }
   }
 
+  
   Future<void> approveServiceProvider(int userId) async {
     final response = await http.post(Uri.parse('$baseUrl/admin/approve_user/$userId'));
     if (response.statusCode != 200) {
       throw Exception('Failed to approve user');
     }
   }
-
   Future<void> rejectServiceProvider(int userId) async {
     final response = await http.post(Uri.parse('$baseUrl/admin/reject_user/$userId'));
     if (response.statusCode != 200) {
       throw Exception('Failed to reject user');
+    }
+  }
+  // Loan Request Methods
+  Future<http.Response> submitLoanRequest(int clientId, Map<String, dynamic> loanRequest) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/loan_requests/?client_id=$clientId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(loanRequest),
+    );
+    return response;
+  }
+
+  Future<List<Map<String, dynamic>>> getLoanRequestsForBLO(int bloId) async {
+    final response = await http.get(Uri.parse('$baseUrl/blo/$bloId/loan_requests'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load loan requests');
+    }
+  }
+
+  Future<Map<String, dynamic>> getLoanRequestDetails(int loanRequestId) async {
+    final response = await http.get(Uri.parse('$baseUrl/loan_requests/$loanRequestId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load loan request details');
+    }
+  }
+
+  // Update loan status - sends status update to client
+  Future<void> updateLoanStatus(int loanRequestId, String status, String message) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/loan_requests/$loanRequestId/status'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'status': status,
+        'message': message,
+        'updated_at': DateTime.now().toIso8601String(),
+      }),
+    );
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update loan status: ${response.body}');
+    }
+  }
+  
+  // Get loan status for client
+  Future<Map<String, dynamic>?> getLoanStatus(int clientId, int bloId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/loan_status?client_id=$clientId&blo_id=$bloId')
+    );
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data;
+    } else if (response.statusCode == 404) {
+      return null;
+    } else {
+      throw Exception('Failed to get loan status: ${response.body}');
+    }
+  }
+
+  // Financial Planner methods
+  Future<List<Map<String, dynamic>>> getFinancialPlanners() async {
+    final response = await get("financial_planners");
+
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load Financial Planners: ${response.body}');
+    }
+  }
+
+  // Fetch service requests for a Financial Planner
+  Future<List<Map<String, dynamic>>> getFinancialPlannerRequests(int plannerId) async {
+    final response = await http.get(Uri.parse('$baseUrl/financial_planner/$plannerId/requests'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load FP requests');
+    }
+  }
+
+  // Fetch approved clients for a Financial Planner
+  Future<List<Map<String, dynamic>>> getApprovedClientsForFP(int plannerId) async {
+    final response = await http.get(Uri.parse('$baseUrl/financial_planner/$plannerId/approved_clients'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load approved clients for FP');
+    }
+  }
+
+  // Update service request status (approve/reject)
+  Future<void> updateServiceRequestStatus(int requestId, String status) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/requests/$requestId'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'status': status}),
+    );
+    
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update request status: ${response.body}');
+    }
+  }
+
+  // Forgot Password - Send reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    final response = await post('forgot-password', {'email': email});
+    
+    if (response.statusCode != 200) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['detail'] ?? 'Failed to send reset email');
+    }
+  }
+
+  // Reset Password - Set new password with token
+  Future<void> resetPassword(String token, String newPassword) async {
+    final response = await post('reset-password', {
+      'token': token,
+      'new_password': newPassword,
+    });
+    
+    if (response.statusCode != 200) {
+      final errorData = jsonDecode(response.body);
+      throw Exception(errorData['detail'] ?? 'Failed to reset password');
+    }
+  }
+
+  // Financial Chatbot
+  Future<String> sendChatbotMessage(String message, int clientId) async {
+    final response = await post('chatbot', {
+      'message': message,
+      'client_id': clientId,
+    });
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['response'] ?? 'Sorry, I couldn\'t process your request.';
+    } else {
+      throw Exception('Failed to get chatbot response');
     }
   }
 

@@ -55,23 +55,44 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _connectWebSocket() {
-    _channel = IOWebSocketChannel.connect(
-      Uri.parse('ws://192.168.0.101:8000/ws/chat/${widget.senderId}'),
-      //Uri.parse('ws://10.0.2.2:8000/ws/chat/${widget.senderId}'),
-    );
+    try {
+      _channel = IOWebSocketChannel.connect(
+        Uri.parse('ws://10.98.204.246:8000/ws/chat/${widget.senderId}'),
+        //Uri.parse('ws://10.33.24.1:8000/ws/chat/${widget.senderId}'),
+        //Uri.parse('ws://10.0.2.2:8000/ws/chat/${widget.senderId}'),
+      );
 
-    _channel.stream.listen((event) {
-      final data = jsonDecode(event);
-      setState(() {
-        _messages.add({
-          'sender_id': data['sender_id'],
-          'receiver_id': widget.senderId,
-          'message': data['message'],
-          'timestamp': DateTime.now().toIso8601String(),
-        });
-      });
-      _scrollToBottom();
-    });
+      _channel.stream.listen(
+        (event) {
+          try {
+            final data = jsonDecode(event);
+            setState(() {
+              _messages.add({
+                'sender_id': data['sender_id'],
+                'receiver_id': widget.senderId,
+                'message': data['message'],
+                'timestamp': DateTime.now().toIso8601String(),
+              });
+            });
+            _scrollToBottom();
+          } catch (e) {
+            print('Error parsing message: $e');
+          }
+        },
+        onError: (error) {
+          print('WebSocket error: $error');
+          // Try to reconnect after a delay
+          Future.delayed(const Duration(seconds: 3), () {
+            _connectWebSocket();
+          });
+        },
+        onDone: () {
+          print('WebSocket connection closed');
+        },
+      );
+    } catch (e) {
+      print('Failed to connect WebSocket: $e');
+    }
   }
 
   void _sendMessage() {
