@@ -3,9 +3,9 @@
 # Email settings (update these for production)
 EMAIL_CONFIG = {
     "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "smtp_username": "ahnafk8@gmail.com",  # Your Gmail address
-    "smtp_password": "nnfz obce jkei pfyo",     # Your Gmail app password
+    "smtp_port": ,
+    "smtp_username": "",  # Your Gmail address
+    "smtp_password": "",     # Your Gmail app password
     "sender_name": "TaxMate Team"
 }
 
